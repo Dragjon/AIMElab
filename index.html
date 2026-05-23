@@ -901,7 +901,7 @@ function renderProblemText(text) {
   text = text.replace(
     /\[asy\]([\s\S]*?)\[\/asy\]/g,
     (_, asyCode) => {
-      // FIX: Clean up indentation formatting from source code blocks line-by-line
+      // Clean up line breaks and spacing from source code indentation
       const cleanedAsyCode = asyCode
         .split('\n')
         .map(line => line.trim())
@@ -910,11 +910,13 @@ function renderProblemText(text) {
 
       const encoded = encodeURIComponent(cleanedAsyCode);
 
+      // Wrapping with tex2jax_ignore tells MathJax NOT to touch the image string,
+      // which lets the browser successfully render it as a visual image.
       return `
-        <div class="asy-container" style="text-align: center;">
+        <div class="asy-container tex2jax_ignore" style="text-align: center;">
           <img
             src="https://asymptote.ualberta.ca/cgi-bin/asy?f=image&script=${encoded}"
-            style="max-width:100%; border-radius:12px; margin:16px 0;"
+            style="max-width:100%; border-radius:12px; margin:16px 0; display: inline-block;"
             alt="Asymptote Diagram"
           />
         </div>
