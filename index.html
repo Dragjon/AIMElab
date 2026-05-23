@@ -918,21 +918,10 @@ async function renderProblemText(text) {
     }
   );
 
-  // 2. IMAGE FILES → real <img>
-  text = text.replace(
-    /([A-Za-z0-9_\-\s]+\.png)/g,
-    (match) => {
-      const file = match.trim().replace(/\s+/g, '%20');
-      return `<div style="text-align:center;margin:16px 0;">
-                <img src="/images/${file}" style="max-width:100%;border-radius:12px;" />
-              </div>`;
-    }
-  );
-
-  // 3. line breaks
+  // 2. line breaks
   text = text.replace(/\n/g, '<br>');
 
-  // 4. render ASY AFTER DOM paint
+  // 3. render ASY AFTER DOM paint
   setTimeout(async () => {
     for (const block of asyBlocks) {
       try {
