@@ -897,7 +897,7 @@ function startSession() {
 function renderProblemText(text) {
   if (!text) return '';
 
-  // Render Asymptote blocks
+  // 1. Process Asymptote blocks first
   text = text.replace(
     /\[asy\]([\s\S]*?)\[\/asy\]/g,
     (_, asyCode) => {
@@ -910,21 +910,13 @@ function renderProblemText(text) {
 
       const encoded = encodeURIComponent(cleanedAsyCode);
 
-      // Wrapping with tex2jax_ignore tells MathJax NOT to touch the image string,
-      // which lets the browser successfully render it as a visual image.
-      return `
-        <div class="asy-container tex2jax_ignore" style="text-align: center;">
-          <img
-            src="https://asymptote.ualberta.ca/cgi-bin/asy?f=image&script=${encoded}"
-            style="max-width:100%; border-radius:12px; margin:16px 0; display: inline-block;"
-            alt="Asymptote Diagram"
-          />
-        </div>
-      `;
+      // Keep this entire string template on a single flat line!
+      // This guarantees no \n characters exist here to be accidentally replaced by <br> later.
+      return `<div class="asy-container tex2jax_ignore" style="text-align: center;"><img src="https://asymptote.ualberta.ca/cgi-bin/asy?f=image&script=${encoded}" style="max-width:100%; border-radius:12px; margin:16px 0;" alt="Asymptote Diagram" /></div>`;
     }
   );
 
-  // Newlines
+  // 2. Safely apply line breaks globally to everything else
   text = text.replace(/\n/g, '<br>');
 
   return text;
