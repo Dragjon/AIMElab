@@ -925,7 +925,7 @@ async function renderProblemText(text) {
   setTimeout(async () => {
     for (const block of asyBlocks) {
       try {
-        const res = await fetch("https://asymptote-renderer-1.onrender.com/render", {
+        const res = await fetch("https://asymptote-renderer-2.onrender.com/render", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code: block.code })
