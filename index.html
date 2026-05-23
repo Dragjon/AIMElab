@@ -385,6 +385,20 @@ input:checked + .slider::before { transform: translateX(20px); }
 .text-accent { color: var(--accent); }
 .text-muted { color: var(--text3); font-size: 13px; }
 .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+
+.asy-loader {
+  background: linear-gradient(90deg,#f3f4f6,#e5e7eb,#f3f4f6);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 </style>
 </head>
 <body>
@@ -914,7 +928,16 @@ async function renderProblemText(text) {
 
       asyBlocks.push({ id, code: cleanedAsyCode });
 
-      return `<div id="${placeholder}" class="asy-container" style="text-align:center;margin:16px 0;"></div>`;
+      return `
+        <div id="${placeholder}" class="asy-container" style="text-align:center;margin:16px 0;">
+          <div class="asy-loader">
+            <div class="spinner"></div>
+            <div style="margin-top:8px;font-size:13px;opacity:0.7;">
+              Rendering diagram...
+            </div>
+          </div>
+        </div>
+      `;
     }
   );
 
@@ -937,10 +960,18 @@ async function renderProblemText(text) {
         const url = URL.createObjectURL(blob);
 
         const el = document.getElementById(`asy_${block.id}`);
+
         if (el) {
           el.innerHTML = `
-            <img src="${url}" style="max-width:100%;border-radius:12px;margin:16px 0;" />
+            <img src="${url}"
+                style="max-width:100%;border-radius:12px;margin:16px 0;opacity:0;transition:opacity 0.3s;" />
           `;
+
+          // fade-in effect
+          const img = el.querySelector("img");
+          requestAnimationFrame(() => {
+            img.style.opacity = "1";
+          });
         }
       } catch (err) {
         console.error("Asy render failed:", err);
