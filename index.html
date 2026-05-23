@@ -872,7 +872,11 @@ function buildPool(opts = {}) {
   if (opts.onlyWrong) {
     pool = pool.filter(p => {
       const hist = attempts[p.ID];
-      if (!hist || hist.length === 0) return true; // unseen
+
+      // Must have been attempted before
+      if (!hist || hist.length === 0) return false;
+
+      // Never answered correctly
       return !hist.some(a => a.correct);
     });
   }
