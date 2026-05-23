@@ -962,8 +962,10 @@ function showQuestion(problem) {
   meta.innerHTML = metaHTML;
 
   // Question body
-  document.getElementById('question-body').innerHTML =
-    renderProblemText(problem.Q);
+  renderProblemText(problem.Q).then(htmlOutput => {
+    document.getElementById('question-body').innerHTML = htmlOutput;
+  });
+
 
   // Progress
   const pct = sessionQueue.length > 1 ? (sessionIndex / (sessionQueue.length - 1)) * 100 : 0;
