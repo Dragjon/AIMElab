@@ -428,25 +428,85 @@ input:checked + .slider { background: var(--accent); }
 input:checked + .slider::before { transform: translateX(20px); }
 
 /* Theme swatches */
-.theme-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.theme-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .theme-swatch {
-  border-radius: var(--radius-sm); padding: 12px 8px; text-align: center;
-  cursor: pointer; border: 2px solid transparent; transition: all var(--transition);
-  font-size: 12px; font-weight: 600;
+  border-radius: var(--radius-sm);
+  padding: 0;
+  text-align: center;
+  cursor: pointer;
+  border: 2px solid var(--border);
+  transition: all var(--transition);
+  font-size: 11px;
+  font-weight: 600;
+  overflow: hidden;
+  background: var(--bg3);
+  color: var(--text2);
 }
-.theme-swatch.active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
-.theme-dark     { background: #0d0f14; color: #e8eaf2; }
-.theme-light    { background: #f4f5fa; color: #1a1d2e; }
-.theme-sepia    { background: #1a1410; color: #f0e6d0; }
-.theme-forest   { background: #0d1410; color: #e0f0e8; }
-.theme-midnight { background: #070818; color: #e2e8ff; }
-.theme-rose     { background: #130a0e; color: #fce7f3; }
-.theme-ocean    { background: #060d18; color: #e0f4ff; }
-.theme-dracula  { background: #1e1e2e; color: #f8f8f2; }
-.theme-sunset   { background: #12080a; color: #fff0e8; }
-.theme-arctic   { background: #f0f4f8; color: #0f1c2e; }
-.theme-candy    { background: #0f0a18; color: #fdf4ff; }
-.theme-mocha    { background: #1c1612; color: #f5ede0; }
+.theme-swatch:hover { border-color: var(--text3); color: var(--text); transform: translateY(-1px); }
+.theme-swatch.active { border-color: var(--accent); color: var(--text); box-shadow: 0 0 0 2px var(--accent-glow); }
+.theme-swatch-bar {
+  height: 28px;
+  width: 100%;
+  display: flex;
+}
+.theme-swatch-bar span {
+  flex: 1;
+  display: block;
+}
+.theme-swatch-label {
+  padding: 6px 4px 7px;
+}
+
+/* Bar colours per theme: bg | accent | accent2 */
+.theme-dark     .theme-swatch-bar { background: #0d0f14; }
+.theme-dark     .theme-swatch-bar span:nth-child(1) { background: #0d0f14; }
+.theme-dark     .theme-swatch-bar span:nth-child(2) { background: #6c8ef5; }
+.theme-dark     .theme-swatch-bar span:nth-child(3) { background: #a78bfa; }
+
+.theme-light    .theme-swatch-bar { background: #f4f5fa; }
+.theme-light    .theme-swatch-bar span:nth-child(1) { background: #f4f5fa; }
+.theme-light    .theme-swatch-bar span:nth-child(2) { background: #6c8ef5; }
+.theme-light    .theme-swatch-bar span:nth-child(3) { background: #a78bfa; }
+
+.theme-sepia    .theme-swatch-bar span:nth-child(1) { background: #1a1410; }
+.theme-sepia    .theme-swatch-bar span:nth-child(2) { background: #d4a85a; }
+.theme-sepia    .theme-swatch-bar span:nth-child(3) { background: #e8c87a; }
+
+.theme-forest   .theme-swatch-bar span:nth-child(1) { background: #0d1410; }
+.theme-forest   .theme-swatch-bar span:nth-child(2) { background: #5ecf80; }
+.theme-forest   .theme-swatch-bar span:nth-child(3) { background: #89e8a8; }
+
+.theme-midnight .theme-swatch-bar span:nth-child(1) { background: #070818; }
+.theme-midnight .theme-swatch-bar span:nth-child(2) { background: #818cf8; }
+.theme-midnight .theme-swatch-bar span:nth-child(3) { background: #c4b5fd; }
+
+.theme-rose     .theme-swatch-bar span:nth-child(1) { background: #130a0e; }
+.theme-rose     .theme-swatch-bar span:nth-child(2) { background: #f472b6; }
+.theme-rose     .theme-swatch-bar span:nth-child(3) { background: #fb7185; }
+
+.theme-ocean    .theme-swatch-bar span:nth-child(1) { background: #060d18; }
+.theme-ocean    .theme-swatch-bar span:nth-child(2) { background: #38bdf8; }
+.theme-ocean    .theme-swatch-bar span:nth-child(3) { background: #7dd3fc; }
+
+.theme-dracula  .theme-swatch-bar span:nth-child(1) { background: #1e1e2e; }
+.theme-dracula  .theme-swatch-bar span:nth-child(2) { background: #bd93f9; }
+.theme-dracula  .theme-swatch-bar span:nth-child(3) { background: #ff79c6; }
+
+.theme-sunset   .theme-swatch-bar span:nth-child(1) { background: #12080a; }
+.theme-sunset   .theme-swatch-bar span:nth-child(2) { background: #fb923c; }
+.theme-sunset   .theme-swatch-bar span:nth-child(3) { background: #fbbf24; }
+
+.theme-arctic   .theme-swatch-bar span:nth-child(1) { background: #dde5f0; }
+.theme-arctic   .theme-swatch-bar span:nth-child(2) { background: #0ea5e9; }
+.theme-arctic   .theme-swatch-bar span:nth-child(3) { background: #6366f1; }
+
+.theme-candy    .theme-swatch-bar span:nth-child(1) { background: #0f0a18; }
+.theme-candy    .theme-swatch-bar span:nth-child(2) { background: #e879f9; }
+.theme-candy    .theme-swatch-bar span:nth-child(3) { background: #22d3ee; }
+
+.theme-mocha    .theme-swatch-bar span:nth-child(1) { background: #1c1612; }
+.theme-mocha    .theme-swatch-bar span:nth-child(2) { background: #cba87a; }
+.theme-mocha    .theme-swatch-bar span:nth-child(3) { background: #e8c87a; }
 
 /* Font size selector */
 .font-size-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
@@ -919,18 +979,18 @@ input:checked + .slider::before { transform: translateX(20px); }
       <div class="form-group">
         <label>Theme</label>
         <div class="theme-grid">
-          <div class="theme-swatch theme-dark active" data-theme="dark">Dark</div>
-          <div class="theme-swatch theme-light" data-theme="light">Light</div>
-          <div class="theme-swatch theme-sepia" data-theme="sepia">Sepia</div>
-          <div class="theme-swatch theme-forest" data-theme="forest">Forest</div>
-          <div class="theme-swatch theme-midnight" data-theme="midnight">Midnight</div>
-          <div class="theme-swatch theme-rose" data-theme="rose">Rose</div>
-          <div class="theme-swatch theme-ocean" data-theme="ocean">Ocean</div>
-          <div class="theme-swatch theme-dracula" data-theme="dracula">Dracula</div>
-          <div class="theme-swatch theme-sunset" data-theme="sunset">Sunset</div>
-          <div class="theme-swatch theme-arctic" data-theme="arctic">Arctic</div>
-          <div class="theme-swatch theme-candy" data-theme="candy">Candy</div>
-          <div class="theme-swatch theme-mocha" data-theme="mocha">Mocha</div>
+          <div class="theme-swatch theme-dark active" data-theme="dark"><div class="theme-swatch-bar"><span></span><span></span><span></span></div><div class="theme-swatch-label">Dark</div></div>
+          <div class="theme-swatch theme-light" data-theme="light"><div class="theme-swatch-bar"><span></span><span></span><span></span></div><div class="theme-swatch-label">Light</div></div>
+          <div class="theme-swatch theme-sepia" data-theme="sepia"><div class="theme-swatch-bar"><span></span><span></span><span></span></div><div class="theme-swatch-label">Sepia</div></div>
+          <div class="theme-swatch theme-forest" data-theme="forest"><div class="theme-swatch-bar"><span></span><span></span><span></span></div><div class="theme-swatch-label">Forest</div></div>
+          <div class="theme-swatch theme-midnight" data-theme="midnight"><div class="theme-swatch-bar"><span></span><span></span><span></span></div><div class="theme-swatch-label">Midnight</div></div>
+          <div class="theme-swatch theme-rose" data-theme="rose"><div class="theme-swatch-bar"><span></span><span></span><span></span></div><div class="theme-swatch-label">Rose</div></div>
+          <div class="theme-swatch theme-ocean" data-theme="ocean"><div class="theme-swatch-bar"><span></span><span></span><span></span></div><div class="theme-swatch-label">Ocean</div></div>
+          <div class="theme-swatch theme-dracula" data-theme="dracula"><div class="theme-swatch-bar"><span></span><span></span><span></span></div><div class="theme-swatch-label">Dracula</div></div>
+          <div class="theme-swatch theme-sunset" data-theme="sunset"><div class="theme-swatch-bar"><span></span><span></span><span></span></div><div class="theme-swatch-label">Sunset</div></div>
+          <div class="theme-swatch theme-arctic" data-theme="arctic"><div class="theme-swatch-bar"><span></span><span></span><span></span></div><div class="theme-swatch-label">Arctic</div></div>
+          <div class="theme-swatch theme-candy" data-theme="candy"><div class="theme-swatch-bar"><span></span><span></span><span></span></div><div class="theme-swatch-label">Candy</div></div>
+          <div class="theme-swatch theme-mocha" data-theme="mocha"><div class="theme-swatch-bar"><span></span><span></span><span></span></div><div class="theme-swatch-label">Mocha</div></div>
         </div>
       </div>
 
