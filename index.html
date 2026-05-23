@@ -383,7 +383,6 @@ input:checked + .slider::before { transform: translateX(20px); }
   background: var(--bg2);
   border-top: 1px solid var(--border);
   z-index: 100;
-  padding: 0;
   padding-bottom: env(safe-area-inset-bottom);
   box-shadow: 0 -4px 24px rgba(0,0,0,0.3);
 }
@@ -398,11 +397,11 @@ input:checked + .slider::before { transform: translateX(20px); }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 10px 4px 8px;
+  gap: 3px;
+  padding: 10px 2px 8px;
   cursor: pointer;
   color: var(--text3);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.02em;
   transition: color var(--transition);
@@ -412,27 +411,19 @@ input:checked + .slider::before { transform: translateX(20px); }
   -webkit-tap-highlight-color: transparent;
   position: relative;
 }
-.mobile-nav-item .mobile-nav-icon {
-  font-size: 20px;
-  line-height: 1;
-  transition: transform var(--transition);
-}
-.mobile-nav-item.active {
-  color: var(--accent);
-}
-.mobile-nav-item.active .mobile-nav-icon {
-  transform: translateY(-2px);
-}
+.mobile-nav-item .mobile-nav-icon { font-size: 20px; line-height: 1; transition: transform var(--transition); }
+.mobile-nav-item.active { color: var(--accent); }
+.mobile-nav-item.active .mobile-nav-icon { transform: translateY(-2px); }
 .mobile-nav-item.active::before {
   content: '';
   position: absolute;
-  top: 0; left: 20%; right: 20%;
+  top: 0; left: 15%; right: 15%;
   height: 2px;
   background: var(--accent);
   border-radius: 0 0 2px 2px;
 }
 
-/* ===== MOBILE MENU OVERLAY ===== */
+/* ===== MOBILE MORE MENU ===== */
 #mobile-more-menu {
   display: none;
   position: fixed;
@@ -446,81 +437,91 @@ input:checked + .slider::before { transform: translateX(20px); }
   transform: translateY(100%);
   transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
-#mobile-more-menu.open {
-  transform: translateY(0);
-}
-#mobile-more-menu.visible {
-  display: block;
-}
-.mobile-menu-handle {
-  width: 36px; height: 4px;
-  background: var(--border);
-  border-radius: 2px;
-  margin: 0 auto 16px;
-}
-.mobile-menu-title {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text3);
-  font-weight: 700;
-  margin-bottom: 8px;
-  padding: 0 4px;
-}
+#mobile-more-menu.open { transform: translateY(0); }
+#mobile-more-menu.visible { display: block; }
+.mobile-menu-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
+.mobile-menu-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); font-weight: 700; margin-bottom: 8px; padding: 0 4px; }
 .mobile-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 8px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  color: var(--text2);
-  font-size: 15px;
-  font-weight: 500;
-  transition: all var(--transition);
-  -webkit-tap-highlight-color: transparent;
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 8px; border-radius: var(--radius-sm);
+  cursor: pointer; color: var(--text2); font-size: 15px; font-weight: 500;
+  transition: all var(--transition); -webkit-tap-highlight-color: transparent;
 }
 .mobile-menu-item:hover, .mobile-menu-item:active { background: var(--bg3); color: var(--text); }
 .mobile-menu-item.active { color: var(--accent); background: var(--accent-glow); }
 .mobile-menu-item .menu-icon { font-size: 20px; width: 28px; text-align: center; }
 #mobile-overlay-backdrop {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 199;
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5); z-index: 199;
 }
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 700px) {
+  /* Sidebar replaced by bottom nav */
   #sidebar { display: none; }
   #mobile-nav { display: block; }
-  #app { height: auto; min-height: 100vh; overflow: visible; }
-  #main { overflow: visible; padding-bottom: 70px; }
-  .page { padding: 16px; }
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .page-title { font-size: 1.6rem; }
 
-  /* fix side-by-side charts on home */
-  #page-home > div[style*="grid-template-columns:1fr 1fr"] {
+  /* App layout */
+  #app { height: auto; min-height: 100vh; overflow: visible; }
+  #main { overflow: visible; padding-bottom: 72px; }
+
+  /* Page padding */
+  .page { padding: 16px; }
+  .page-title { font-size: 1.5rem; }
+
+  /* Stats grid */
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+  /* All 2-col grids collapse to 1 col */
+  [style*="grid-template-columns:1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr"] {
     grid-template-columns: 1fr !important;
   }
 
-  /* answer area stack */
-  .answer-area { flex-direction: column; align-items: stretch; }
-  .answer-area .btn { width: 100%; justify-content: center; }
-  #answer-input { width: 100%; }
+  /* Filter rows: stack vertically */
+  .filter-row { flex-direction: column; gap: 8px; }
+  .filter-row .form-group { min-width: unset; width: 100%; margin-bottom: 0; }
 
-  /* filter rows on small screens */
-  .filter-row { flex-direction: column; }
-  .filter-row .form-group { min-width: unset; }
+  /* Practice config checkboxes: stack */
+  #practice-config .flex-row { flex-direction: column; align-items: flex-start; gap: 10px; }
 
-  /* quick start buttons full-width */
-  #page-home .flex-row { flex-direction: column; }
-  #page-home .flex-row .btn { width: 100%; justify-content: center; }
+  /* Answer area: stack */
+  .answer-area { flex-direction: column; align-items: stretch; gap: 10px; }
+  .answer-area .form-group { width: 100%; }
+  #answer-input { width: 100%; font-size: 1.1rem; }
+  .answer-area .btn { width: 100%; justify-content: center; height: 48px; }
 
-  /* history table horizontal scroll */
-  .history-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* Post-answer buttons */
+  #post-answer-area .flex-row { flex-direction: column; gap: 10px; }
+  #post-answer-area .btn { width: 100%; justify-content: center; }
+
+  /* Question card top row */
+  #question-card .flex-between { flex-wrap: wrap; gap: 8px; }
+  #question-card .question-meta { flex: 1; min-width: 0; }
+
+  /* Browse problem card header */
+  #browse-problem-card .flex-between { flex-direction: column; align-items: flex-start; gap: 10px; }
+  #browse-problem-card .flex-between .btn { width: 100%; justify-content: center; }
+
+  /* Browse answer reveal */
+  #browse-problem-card .mt-4 { display: flex; flex-direction: column; gap: 10px; }
+  #browse-problem-card #browse-reveal-ans { width: 100%; }
+  #browse-answer-reveal { margin-left: 0 !important; }
+
+  /* Home quick-start */
+  #page-home .card .flex-row { flex-direction: column; gap: 10px; }
+  #page-home .card .flex-row .btn { width: 100%; justify-content: center; }
+
+  /* History page header */
+  #page-history .flex-between { flex-direction: column; align-items: flex-start; gap: 10px; }
+  #page-history .flex-between .btn { align-self: flex-end; }
+
+  /* Prevent horizontal overflow */
+  .page, .card, .question-body { max-width: 100%; overflow-wrap: break-word; word-break: break-word; }
+
+  /* Charts */
+  .chart-wrap { height: 200px; }
+  .chart-wrap canvas { max-height: 200px; }
 }
 
 /* ===== MISC ===== */
@@ -631,22 +632,19 @@ input:checked + .slider::before { transform: translateX(20px); }
   </div>
 </nav>
 
-<!-- Mobile "More" slide-up menu -->
+<!-- Mobile "More" slide-up sheet -->
 <div id="mobile-overlay-backdrop"></div>
 <div id="mobile-more-menu">
   <div class="mobile-menu-handle"></div>
   <div class="mobile-menu-title">More</div>
   <div class="mobile-menu-item" data-page="history">
-    <span class="menu-icon">🕘</span>
-    History
+    <span class="menu-icon">🕘</span>History
   </div>
   <div class="mobile-menu-item" data-page="settings">
-    <span class="menu-icon">⚙️</span>
-    Settings
+    <span class="menu-icon">⚙️</span>Settings
   </div>
-  <div class="mobile-menu-item" id="mobile-reset-btn" style="color: var(--wrong);">
-    <span class="menu-icon">🗑️</span>
-    Reset Data
+  <div class="mobile-menu-item" id="mobile-reset-btn" style="color:var(--wrong);">
+    <span class="menu-icon">🗑️</span>Reset Data
   </div>
 </div>
 
@@ -1044,15 +1042,12 @@ function navigate(page) {
   // Sync mobile nav
   document.querySelectorAll('.mobile-nav-item[data-page]').forEach(n => n.classList.remove('active'));
   document.querySelector(`.mobile-nav-item[data-page="${page}"]`)?.classList.add('active');
-  // Sync mobile more-menu items
   document.querySelectorAll('.mobile-menu-item[data-page]').forEach(n => n.classList.remove('active'));
   document.querySelector(`.mobile-menu-item[data-page="${page}"]`)?.classList.add('active');
   if (page === 'home') renderHome();
   if (page === 'stats') renderStats();
   if (page === 'history') renderHistory();
   if (page === 'browse') renderBrowse();
-  // Scroll to top of main on navigation
-  document.getElementById('main').scrollTo(0, 0);
   window.scrollTo(0, 0);
 }
 
@@ -1069,7 +1064,6 @@ document.querySelectorAll('.mobile-nav-item[data-page]').forEach(item => {
 const moreBtn = document.getElementById('mobile-more-btn');
 const moreMenu = document.getElementById('mobile-more-menu');
 const moreBackdrop = document.getElementById('mobile-overlay-backdrop');
-
 function openMoreMenu() {
   moreMenu.classList.add('visible');
   moreBackdrop.style.display = 'block';
@@ -1080,17 +1074,11 @@ function closeMoreMenu() {
   moreBackdrop.style.display = 'none';
   setTimeout(() => moreMenu.classList.remove('visible'), 300);
 }
-
 moreBtn.addEventListener('click', openMoreMenu);
 moreBackdrop.addEventListener('click', closeMoreMenu);
-
 document.querySelectorAll('.mobile-menu-item[data-page]').forEach(item => {
-  item.addEventListener('click', () => {
-    navigate(item.dataset.page);
-    closeMoreMenu();
-  });
+  item.addEventListener('click', () => { navigate(item.dataset.page); closeMoreMenu(); });
 });
-
 document.getElementById('mobile-reset-btn').addEventListener('click', () => {
   closeMoreMenu();
   if (confirm('Reset ALL data? This cannot be undone.')) {
