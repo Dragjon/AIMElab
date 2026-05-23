@@ -894,56 +894,29 @@ function startSession() {
   showQuestion(sessionQueue[0]);
 }
 
-async function renderProblemText(text) {
+function renderProblemText(text) {
   if (!text) return '';
 
-  // 1. Locate all [asy]...[/asy] blocks
-  const asyRegex = /\[asy\]([\s\S]*?)\[\/asy\]/g;
-  const matches = [...text.matchAll(asyRegex)];
+  // 1. Process Asymptote blocks first
+  text = text.replace(
+    /\[asy\]([\s\S]*?)\[\/asy\]/g,
+    (_, asyCode) => {
+      // Clean up line breaks and spacing from source code indentation
+      const cleanedAsyCode = asyCode
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .join('\n');
 
-  // 2. Compile each block asynchronously
-  for (const match of matches) {
-    const fullMatch = match[0];
-    const asyCode = match[1];
+      const encoded = encodeURIComponent(cleanedAsyCode);
 
-    // Clean up line breaks and spacing from source code indentation
-    const cleanedAsyCode = asyCode
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0)
-      .join('\n');
-
-    try {
-      // Send code to the production server API via POST
-      const response = await fetch('https://ualberta.ca', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code: cleanedAsyCode,
-          format: 'svg' // Resolves directly to highly-scalable vector math graphics
-        })
-      });
-
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      
-      const data = await response.json();
-
-      if (data.svg) {
-        // Construct visual wrappers cleanly on a flat string line
-        const svgWrapper = `<div class="asy-container tex2jax_ignore" style="text-align: center; max-width:100%; margin:16px 0;">${data.svg}</div>`;
-        text = text.replace(fullMatch, svgWrapper);
-      } else if (data.error) {
-        console.error('Asymptote compile error:', data.error);
-        text = text.replace(fullMatch, `<div style="color:red; font-family:monospace;">Asy Error: ${data.error}</div>`);
-      }
-    } catch (error) {
-      console.error('Network/API Fetch failure:', error);
-      // Fallback message so the text layout doesn't break entirely
-      text = text.replace(fullMatch, `<div style="color:orange;">[Failed to load diagram]</div>`);
+      // Keep this entire string template on a single flat line!
+      // This guarantees no \n characters exist here to be accidentally replaced by <br> later.
+      return `<div class="asy-container tex2jax_ignore" style="text-align: center;"><img src="https://asymptote.ualberta.ca/cgi-bin/asy?f=image&script=${encoded}" style="max-width:100%; border-radius:12px; margin:16px 0;" alt="Asymptote Diagram" /></div>`;
     }
-  }
+  );
 
-  // 3. Safely apply line breaks globally to everything else
+  // 2. Safely apply line breaks globally to everything else
   text = text.replace(/\n/g, '<br>');
 
   return text;
@@ -962,10 +935,8 @@ function showQuestion(problem) {
   meta.innerHTML = metaHTML;
 
   // Question body
-  renderProblemText(problem.Q).then(htmlOutput => {
-    document.getElementById('question-body').innerHTML = htmlOutput;
-  });
-
+  document.getElementById('question-body').innerHTML =
+    renderProblemText(problem.Q);
 
   // Progress
   const pct = sessionQueue.length > 1 ? (sessionIndex / (sessionQueue.length - 1)) * 100 : 0;
