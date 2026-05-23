@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AIMElab — Olympiad Practice</title>
+
+<!-- MathJax -->
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']], processEscapes: true },
+  options: { skipHtmlTags: ['script','noscript','style','textarea'] },
+  startup: { typeset: false }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.min.js"></script>
+
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<!-- PapaParse -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+<style>
+/* ===== FONTS ===== */
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+/* ===== CSS VARIABLES / THEMES ===== */
+:root {
+  --bg: #0d0f14;
+  --bg2: #141720;
+  --bg3: #1c202e;
+  --bg4: #242838;
+  --border: #2e3348;
+  --accent: #6c8ef5;
+  --accent2: #a78bfa;
+  --accent-glow: rgba(108,142,245,0.18);
+  --correct: #34d399;
+  --wrong: #f87171;
+  --warn: #fbbf24;
+  --text: #e8eaf2;
+  --text2: #9198b5;
+  --text3: #5d6480;
+  --font-display: 'DM Serif Display', serif;
+  --font-body: 'Outfit', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 32px rgba(0,0,0,0.5);
+  --transition: 0.2s ease;
+}
+
+[data-theme="light"] {
+  --bg: #f4f5fa;
+  --bg2: #ffffff;
+  --bg3: #eef0f8;
+  --bg4: #e4e7f5;
+  --border: #d0d5ec;
+  --text: #1a1d2e;
+  --text2: #4a5080;
+  --text3: #8890b5;
+  --accent-glow: rgba(108,142,245,0.1);
+  --shadow: 0 4px 24px rgba(0,0,0,0.1);
+}
+
+[data-theme="sepia"] {
+  --bg: #1a1410;
+  --bg2: #221c15;
+  --bg3: #2a231a;
+  --bg4: #332b20;
+  --border: #4a3d2e;
+  --accent: #d4a85a;
+  --accent2: #e8c87a;
+  --accent-glow: rgba(212,168,90,0.15);
+  --text: #f0e6d0;
+  --text2: #b8a888;
+  --text3: #7a6a50;
+}
+
+[data-theme="forest"] {
+  --bg: #0d1410;
+  --bg2: #141c16;
+  --bg3: #1a2420;
+  --bg4: #222e28;
+  --border: #2e4035;
+  --accent: #5ecf80;
+  --accent2: #89e8a8;
+  --accent-glow: rgba(94,207,128,0.15);
+  --text: #e0f0e8;
+  --text2: #88b898;
+  --text3: #507060;
+}
+
+[data-font-size="small"] { font-size: 14px; }
+[data-font-size="medium"] { font-size: 16px; }
+[data-font-size="large"] { font-size: 18px; }
+[data-font-size="xl"] { font-size: 20px; }
+
+/* ===== RESET ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 16px;
+  transition: background 0.3s, color 0.3s;
+  overflow-x: hidden;
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ===== LAYOUT ===== */
+#app { display: flex; height: 100vh; overflow: hidden; }
+
+/* ===== SIDEBAR ===== */
+#sidebar {
+  width: 240px;
+  min-width: 240px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  z-index: 10;
+  transition: width 0.3s, min-width 0.3s;
+}
+#sidebar.collapsed { width: 64px; min-width: 64px; }
+
+.sidebar-logo {
+  padding: 24px 20px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 18px; color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+.logo-text { font-family: var(--font-display); font-size: 20px; white-space: nowrap; overflow: hidden; }
+.logo-text span { color: var(--accent); }
+
+.sidebar-nav { padding: 12px 8px; flex: 1; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  cursor: pointer; color: var(--text2); font-size: 14px; font-weight: 500;
+  transition: all var(--transition); white-space: nowrap; overflow: hidden;
+  margin-bottom: 2px; user-select: none;
+}
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active { background: var(--accent-glow); color: var(--accent); }
+.nav-icon { font-size: 18px; flex-shrink: 0; width: 22px; text-align: center; }
+
+.sidebar-footer { padding: 12px 8px 16px; border-top: 1px solid var(--border); }
+
+/* ===== MAIN CONTENT ===== */
+#main {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  background: var(--bg);
+}
+
+/* ===== PAGES ===== */
+.page { display: none; padding: 32px; max-width: 960px; margin: 0 auto; animation: fadeIn 0.3s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+.page-header { margin-bottom: 28px; }
+.page-title { font-family: var(--font-display); font-size: 2rem; color: var(--text); }
+.page-subtitle { color: var(--text2); margin-top: 4px; font-size: 0.95rem; }
+
+/* ===== CARDS ===== */
+.card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px;
+  margin-bottom: 20px; box-shadow: var(--shadow);
+}
+.card-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 12px; font-weight: 600; }
+
+/* ===== BUTTONS ===== */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border-radius: var(--radius-sm);
+  font-family: var(--font-body); font-size: 14px; font-weight: 600;
+  cursor: pointer; border: none; transition: all var(--transition);
+  text-decoration: none; white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; box-shadow: 0 0 20px var(--accent-glow); }
+.btn-primary:hover { filter: brightness(1.15); transform: translateY(-1px); }
+.btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--bg4); }
+.btn-success { background: var(--correct); color: #fff; }
+.btn-danger { background: var(--wrong); color: #fff; }
+.btn-lg { padding: 14px 28px; font-size: 16px; border-radius: var(--radius); }
+.btn-sm { padding: 6px 14px; font-size: 13px; }
+
+/* ===== FORM ELEMENTS ===== */
+select, input[type="number"], input[type="text"] {
+  background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text); border-radius: var(--radius-sm);
+  padding: 10px 14px; font-family: var(--font-body); font-size: 14px;
+  outline: none; transition: border-color var(--transition);
+  width: 100%;
+}
+select:focus, input:focus { border-color: var(--accent); }
+select option { background: var(--bg2); }
+
+label { font-size: 13px; color: var(--text2); font-weight: 500; display: block; margin-bottom: 6px; }
+.form-group { margin-bottom: 16px; }
+
+/* ===== TOGGLE ===== */
+.toggle-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.toggle-btn {
+  padding: 8px 16px; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--bg3); color: var(--text2); font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all var(--transition);
+}
+.toggle-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 0 12px var(--accent-glow); }
+
+/* ===== STATS GRID ===== */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 20px; text-align: center; position: relative; overflow: hidden;
+}
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+.stat-value { font-family: var(--font-display); font-size: 2.2rem; color: var(--text); line-height: 1; }
+.stat-label { font-size: 12px; color: var(--text2); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+.stat-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+.stat-correct { --accent: var(--correct); }
+.stat-wrong { --accent: var(--wrong); }
+.stat-accent2 { --accent: var(--accent2); }
+
+/* ===== QUESTION CARD ===== */
+#question-card { display: none; }
+#question-card.active { display: block; }
+
+.question-meta {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center;
+}
+.badge {
+  padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text2);
+}
+.badge-accent { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+
+.question-body {
+  font-size: 1.05rem; line-height: 1.85; color: var(--text);
+  background: var(--bg3); border-radius: var(--radius-sm); padding: 24px;
+  border: 1px solid var(--border); margin-bottom: 24px;
+  font-family: var(--font-body);
+}
+
+.answer-area { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+#answer-input {
+  width: 200px; font-size: 1.2rem; font-family: var(--font-mono);
+  text-align: center; padding: 12px; flex-shrink: 0;
+}
+
+.result-banner {
+  display: none; padding: 16px 20px; border-radius: var(--radius-sm);
+  font-weight: 600; font-size: 1rem; margin-top: 16px; align-items: center; gap: 12px;
+}
+.result-banner.show { display: flex; animation: slideIn 0.3s ease; }
+.result-banner.correct { background: rgba(52,211,153,0.12); border: 1px solid var(--correct); color: var(--correct); }
+.result-banner.wrong { background: rgba(248,113,113,0.12); border: 1px solid var(--wrong); color: var(--wrong); }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+
+/* ===== PROGRESS BAR ===== */
+.progress-bar-wrap { background: var(--bg3); border-radius: 999px; height: 8px; margin-bottom: 6px; overflow: hidden; }
+.progress-bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.4s ease; }
+
+/* ===== CHART CONTAINERS ===== */
+.chart-wrap { position: relative; height: 260px; }
+.chart-wrap canvas { max-height: 260px; }
+
+/* ===== FILTER ROW ===== */
+.filter-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px; }
+.filter-row .form-group { margin-bottom: 0; flex: 1; min-width: 120px; }
+
+/* ===== SETTINGS ===== */
+.settings-section { margin-bottom: 28px; }
+.settings-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text3); font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.setting-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.setting-info { flex: 1; }
+.setting-name { font-size: 14px; color: var(--text); font-weight: 500; }
+.setting-desc { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.setting-control { flex-shrink: 0; margin-left: 20px; }
+
+/* Switch */
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; inset: 0; background: var(--bg4); border-radius: 999px; cursor: pointer; transition: 0.2s; }
+.slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: 0.2s; }
+input:checked + .slider { background: var(--accent); }
+input:checked + .slider::before { transform: translateX(20px); }
+
+/* Theme swatches */
+.theme-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.theme-swatch {
+  border-radius: var(--radius-sm); padding: 12px 8px; text-align: center;
+  cursor: pointer; border: 2px solid transparent; transition: all var(--transition);
+  font-size: 12px; font-weight: 600;
+}
+.theme-swatch.active { border-color: var(--accent); }
+.theme-dark { background: #0d0f14; color: #e8eaf2; }
+.theme-light { background: #f4f5fa; color: #1a1d2e; }
+.theme-sepia { background: #1a1410; color: #f0e6d0; }
+.theme-forest { background: #0d1410; color: #e0f0e8; }
+
+/* Font size selector */
+.font-size-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.font-size-btn {
+  padding: 10px; border-radius: var(--radius-sm); text-align: center;
+  border: 1px solid var(--border); background: var(--bg3); cursor: pointer;
+  transition: all var(--transition); color: var(--text2); font-weight: 600;
+}
+.font-size-btn.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+.font-size-btn:nth-child(1) { font-size: 12px; }
+.font-size-btn:nth-child(2) { font-size: 14px; }
+.font-size-btn:nth-child(3) { font-size: 16px; }
+.font-size-btn:nth-child(4) { font-size: 18px; }
+
+/* ===== HISTORY TABLE ===== */
+.history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.history-table th { text-align: left; padding: 10px 12px; color: var(--text3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(--border); }
+.history-table td { padding: 12px; border-bottom: 1px solid var(--border); color: var(--text2); }
+.history-table td:first-child { font-family: var(--font-mono); color: var(--accent); font-size: 12px; }
+.history-table tr:hover td { background: var(--bg3); }
+.pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.pill-correct { background: rgba(52,211,153,0.15); color: var(--correct); }
+.pill-wrong { background: rgba(248,113,113,0.15); color: var(--wrong); }
+
+/* ===== EMPTY STATE ===== */
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text3); }
+.empty-state-icon { font-size: 3rem; margin-bottom: 16px; }
+.empty-state-text { font-size: 1rem; color: var(--text2); margin-bottom: 8px; }
+
+/* ===== LOADING ===== */
+#loading-overlay {
+  position: fixed; inset: 0; background: var(--bg); z-index: 9999;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+}
+.loader { width: 48px; height: 48px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#loading-overlay p { color: var(--text2); font-size: 14px; }
+
+/* ===== PROBLEM NUMBER GRID ===== */
+.prob-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.prob-btn {
+  width: 44px; height: 44px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  background: var(--bg3); color: var(--text2); font-weight: 700; font-size: 13px;
+  cursor: pointer; transition: all var(--transition); display: flex; align-items: center; justify-content: center;
+}
+.prob-btn:hover { border-color: var(--accent); color: var(--accent); }
+.prob-btn.done-correct { background: rgba(52,211,153,0.15); border-color: var(--correct); color: var(--correct); }
+.prob-btn.done-wrong { background: rgba(248,113,113,0.15); border-color: var(--wrong); color: var(--wrong); }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 700px) {
+  #sidebar { display: none; }
+  .page { padding: 16px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ===== MISC ===== */
+.flex-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+.mt-4 { margin-top: 16px; }
+.mt-2 { margin-top: 8px; }
+.text-accent { color: var(--accent); }
+.text-muted { color: var(--text3); font-size: 13px; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+</style>
+</head>
+<body>
+
+<div id="loading-overlay">
+  <div class="loader"></div>
+  <p>Loading AIME dataset…</p>
+</div>
+
+<div id="app">
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">∑</div>
+    <div class="logo-text">AIME<span>lab</span></div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-item active" data-page="home">
+      <span class="nav-icon">🏠</span>
+      <span>Home</span>
+    </div>
+    <div class="nav-item" data-page="practice">
+      <span class="nav-icon">✏️</span>
+      <span>Practice</span>
+    </div>
+    <div class="nav-item" data-page="browse">
+      <span class="nav-icon">📚</span>
+      <span>Browse</span>
+    </div>
+    <div class="nav-item" data-page="stats">
+      <span class="nav-icon">📊</span>
+      <span>Statistics</span>
+    </div>
+    <div class="nav-item" data-page="history">
+      <span class="nav-icon">🕘</span>
+      <span>History</span>
+    </div>
+    <div class="nav-item" data-page="settings">
+      <span class="nav-icon">⚙️</span>
+      <span>Settings</span>
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="nav-item" id="reset-progress-btn" style="color: var(--wrong);">
+      <span class="nav-icon">🗑️</span>
+      <span>Reset Data</span>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main id="main">
+
+  <!-- ===== HOME PAGE ===== -->
+  <div class="page active" id="page-home">
+    <div class="page-header">
+      <div class="page-title">Welcome back 👋</div>
+      <div class="page-subtitle">AIME problems from 1983 – 2024. Track your progress, sharpen your skills.</div>
+    </div>
+
+    <!-- Quick stats -->
+    <div class="stats-grid" id="home-stats"></div>
+
+    <!-- Quick start -->
+    <div class="card">
+      <div class="card-title">Quick Start</div>
+      <div class="flex-row" style="flex-wrap:wrap; gap:12px;">
+        <button class="btn btn-primary btn-lg" id="quick-random">🎲 Random Problem</button>
+        <button class="btn btn-secondary btn-lg" id="quick-unseen">✨ Unseen Problem</button>
+        <button class="btn btn-secondary btn-lg" id="quick-wrong">🔁 Retry a Wrong One</button>
+      </div>
+    </div>
+
+    <!-- Streak / recent -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+      <div class="card">
+        <div class="card-title">Accuracy by Year Range</div>
+        <div class="chart-wrap"><canvas id="chart-year-acc"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Recent Activity (last 14 days)</div>
+        <div class="chart-wrap"><canvas id="chart-recent"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PRACTICE PAGE ===== -->
+  <div class="page" id="page-practice">
+    <div class="page-header">
+      <div class="page-title">Practice</div>
+      <div class="page-subtitle">Configure your session and start solving.</div>
+    </div>
+
+    <!-- Config card -->
+    <div class="card" id="practice-config">
+      <div class="card-title">Session Settings</div>
+      <div class="filter-row">
+        <div class="form-group">
+          <label>Year</label>
+          <select id="filter-year">
+            <option value="all">All Years</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Part</label>
+          <select id="filter-part">
+            <option value="all">All</option>
+            <option value="I">Part I</option>
+            <option value="II">Part II</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Problem #</label>
+          <select id="filter-prob">
+            <option value="all">Any</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex-row mt-2" style="margin-bottom:16px;">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0;">
+          <input type="checkbox" id="no-repeat" checked style="width:16px;height:16px;accent-color:var(--accent)"/>
+          <span style="font-size:13px; color:var(--text2);">Skip already-seen problems</span>
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0;">
+          <input type="checkbox" id="only-wrong" style="width:16px;height:16px;accent-color:var(--accent)"/>
+          <span style="font-size:13px; color:var(--text2);">Only wrong/unseen problems</span>
+        </label>
+      </div>
+      <button class="btn btn-primary" id="start-practice">▶ Start Session</button>
+    </div>
+
+    <!-- Question card -->
+    <div class="card" id="question-card">
+      <div class="flex-between" style="margin-bottom:16px;">
+        <div class="question-meta" id="question-meta"></div>
+        <button class="btn btn-secondary btn-sm" id="skip-btn">Skip →</button>
+      </div>
+
+      <div class="progress-bar-wrap" style="margin-bottom:16px;">
+        <div class="progress-bar-fill" id="session-progress" style="width:0%"></div>
+      </div>
+      <div class="text-muted" id="session-counter" style="margin-bottom:20px;"></div>
+
+      <div class="question-body" id="question-body"></div>
+
+      <div class="answer-area">
+        <div class="form-group" style="margin:0;">
+          <label>Your Answer (integer 000–999)</label>
+          <input type="number" id="answer-input" min="0" max="999" placeholder="e.g. 42"/>
+        </div>
+        <button class="btn btn-primary" id="submit-btn">Submit</button>
+        <button class="btn btn-secondary" id="reveal-btn">Reveal</button>
+      </div>
+
+      <div class="result-banner" id="result-banner"></div>
+
+      <div id="post-answer-area" style="display:none; margin-top:20px;">
+        <div class="flex-row">
+          <button class="btn btn-primary" id="next-btn">Next Problem →</button>
+          <button class="btn btn-secondary" id="end-session-btn">End Session</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BROWSE PAGE ===== -->
+  <div class="page" id="page-browse">
+    <div class="page-header">
+      <div class="page-title">Browse Problems</div>
+      <div class="page-subtitle">Explore by year and part. Green = correct, Red = wrong, Grey = unseen.</div>
+    </div>
+    <div class="card">
+      <div class="filter-row">
+        <div class="form-group">
+          <label>Year</label>
+          <select id="browse-year"></select>
+        </div>
+        <div class="form-group">
+          <label>Part</label>
+          <select id="browse-part">
+            <option value="all">All</option>
+            <option value="">Classic (pre-2000)</option>
+            <option value="I">Part I</option>
+            <option value="II">Part II</option>
+          </select>
+        </div>
+      </div>
+      <div class="prob-grid" id="browse-grid"></div>
+    </div>
+    <!-- View single problem -->
+    <div class="card" id="browse-problem-card" style="display:none;">
+      <div class="flex-between" style="margin-bottom:16px;">
+        <div class="question-meta" id="browse-question-meta"></div>
+        <button class="btn btn-primary btn-sm" id="browse-practice-btn">Practice This →</button>
+      </div>
+      <div class="question-body" id="browse-question-body"></div>
+      <div class="mt-4">
+        <button class="btn btn-secondary btn-sm" id="browse-reveal-ans">Show Answer</button>
+        <span id="browse-answer-reveal" style="display:none; margin-left:12px; font-family:var(--font-mono); font-size:1.1rem; color:var(--accent); font-weight:700;"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STATS PAGE ===== -->
+  <div class="page" id="page-stats">
+    <div class="page-header">
+      <div class="page-title">Statistics</div>
+      <div class="page-subtitle">Your performance over time.</div>
+    </div>
+
+    <!-- Time filter -->
+    <div class="toggle-group" style="margin-bottom:24px;" id="stats-time-filter">
+      <div class="toggle-btn active" data-range="week">This Week</div>
+      <div class="toggle-btn" data-range="month">This Month</div>
+      <div class="toggle-btn" data-range="year">This Year</div>
+      <div class="toggle-btn" data-range="all">All Time</div>
+    </div>
+
+    <div class="stats-grid" id="stats-summary"></div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+      <div class="card">
+        <div class="card-title">Correct vs Wrong Over Time</div>
+        <div class="chart-wrap"><canvas id="chart-timeline"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Accuracy by Part</div>
+        <div class="chart-wrap"><canvas id="chart-by-part"></canvas></div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+      <div class="card">
+        <div class="card-title">Accuracy by Problem Number</div>
+        <div class="chart-wrap"><canvas id="chart-by-probnum"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Accuracy Heatmap by Year</div>
+        <div class="chart-wrap"><canvas id="chart-by-year"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== HISTORY PAGE ===== -->
+  <div class="page" id="page-history">
+    <div class="page-header">
+      <div class="flex-between">
+        <div>
+          <div class="page-title">Attempt History</div>
+          <div class="page-subtitle">Every problem you've attempted.</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="export-btn">⬇ Export CSV</button>
+      </div>
+    </div>
+    <div class="filter-row">
+      <div class="form-group">
+        <label>Filter Year</label>
+        <select id="hist-year"><option value="all">All</option></select>
+      </div>
+      <div class="form-group">
+        <label>Result</label>
+        <select id="hist-result">
+          <option value="all">All</option>
+          <option value="correct">Correct</option>
+          <option value="wrong">Wrong</option>
+        </select>
+      </div>
+    </div>
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div id="history-container" style="overflow-x:auto;">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Year</th>
+              <th>Part</th>
+              <th>Prob #</th>
+              <th>Your Ans</th>
+              <th>Correct Ans</th>
+              <th>Result</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SETTINGS PAGE ===== -->
+  <div class="page" id="page-settings">
+    <div class="page-header">
+      <div class="page-title">Settings</div>
+      <div class="page-subtitle">Customise your AIMElab experience.</div>
+    </div>
+
+    <div class="card settings-section">
+      <div class="settings-title">🎨 Appearance</div>
+
+      <div class="form-group">
+        <label>Theme</label>
+        <div class="theme-grid">
+          <div class="theme-swatch theme-dark active" data-theme="dark">Dark</div>
+          <div class="theme-swatch theme-light" data-theme="light">Light</div>
+          <div class="theme-swatch theme-sepia" data-theme="sepia">Sepia</div>
+          <div class="theme-swatch theme-forest" data-theme="forest">Forest</div>
+        </div>
+      </div>
+
+      <div class="form-group mt-4">
+        <label>Font Size</label>
+        <div class="font-size-grid">
+          <div class="font-size-btn" data-size="small">Aa</div>
+          <div class="font-size-btn active" data-size="medium">Aa</div>
+          <div class="font-size-btn" data-size="large">Aa</div>
+          <div class="font-size-btn" data-size="xl">Aa</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card settings-section">
+      <div class="settings-title">⚙️ Practice</div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-name">Auto-advance after correct answer</div>
+          <div class="setting-desc">Automatically move to next problem when you answer correctly</div>
+        </div>
+        <div class="setting-control">
+          <label class="switch"><input type="checkbox" id="setting-autoadvance"><span class="slider"></span></label>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-name">Show problem ID badge</div>
+          <div class="setting-desc">Display the AIME problem ID while practicing</div>
+        </div>
+        <div class="setting-control">
+          <label class="switch"><input type="checkbox" id="setting-showid" checked><span class="slider"></span></label>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-name">Confirm before skipping</div>
+          <div class="setting-desc">Ask for confirmation before skipping a problem</div>
+        </div>
+        <div class="setting-control">
+          <label class="switch"><input type="checkbox" id="setting-confirm-skip"><span class="slider"></span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="card settings-section">
+      <div class="settings-title">♿ Accessibility</div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-name">High contrast mode</div>
+          <div class="setting-desc">Increase contrast for better readability</div>
+        </div>
+        <div class="setting-control">
+          <label class="switch"><input type="checkbox" id="setting-hcontrast"><span class="slider"></span></label>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-name">Reduce motion</div>
+          <div class="setting-desc">Minimize animations and transitions</div>
+        </div>
+        <div class="setting-control">
+          <label class="switch"><input type="checkbox" id="setting-reducemotion"><span class="slider"></span></label>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-name">Large click targets</div>
+          <div class="setting-desc">Increase button sizes for easier clicking</div>
+        </div>
+        <div class="setting-control">
+          <label class="switch"><input type="checkbox" id="setting-largetargets"><span class="slider"></span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="settings-title">🗃️ Data</div>
+      <p class="text-muted" style="margin-bottom:16px;">All your data is stored locally in your browser. Nothing is sent to any server.</p>
+      <div class="flex-row">
+        <button class="btn btn-secondary" id="export-data-btn">📤 Export Data (JSON)</button>
+        <button class="btn btn-danger" id="clear-data-btn">🗑️ Clear All Data</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script>
+// ============================================================
+// DATA & STATE
+// ============================================================
+let problems = [];
+let filteredPool = [];
+let sessionQueue = [];
+let currentProblem = null;
+let sessionIndex = 0;
+let charts = {};
+
+// localStorage keys
+const LS = {
+  attempts: 'aimelab_attempts',   // { [id]: { correct: bool, answer: int, date: str, count: int }[] }
+  settings: 'aimelab_settings',
+};
+
+function loadAttempts() {
+  try { return JSON.parse(localStorage.getItem(LS.attempts) || '{}'); } catch { return {}; }
+}
+function saveAttempts(a) { localStorage.setItem(LS.attempts, JSON.stringify(a)); }
+
+function loadSettings() {
+  const defaults = {
+    theme: 'dark', fontSize: 'medium',
+    autoadvance: false, showid: true, confirmSkip: false,
+    hcontrast: false, reducemotion: false, largetargets: false
+  };
+  try { return { ...defaults, ...JSON.parse(localStorage.getItem(LS.settings) || '{}') }; } catch { return defaults; }
+}
+function saveSettings(s) { localStorage.setItem(LS.settings, JSON.stringify(s)); }
+
+function recordAttempt(id, correct, userAnswer, correctAnswer) {
+  const a = loadAttempts();
+  if (!a[id]) a[id] = [];
+  a[id].push({ correct, userAnswer, correctAnswer, date: new Date().toISOString() });
+  saveAttempts(a);
+}
+
+function getLastAttempt(id) {
+  const a = loadAttempts();
+  const arr = a[id];
+  return arr && arr.length ? arr[arr.length - 1] : null;
+}
+
+function getBestAttempt(id) {
+  const a = loadAttempts();
+  const arr = a[id];
+  if (!arr || !arr.length) return null;
+  return arr.find(x => x.correct) || arr[arr.length - 1];
+}
+
+// ============================================================
+// CSV LOADING
+// ============================================================
+// Dataset loaded inline
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelector(`.nav-item[data-page="${page}"]`)?.classList.add('active');
+  if (page === 'home') renderHome();
+  if (page === 'stats') renderStats();
+  if (page === 'history') renderHistory();
+  if (page === 'browse') renderBrowse();
+}
+
+document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+  item.addEventListener('click', () => navigate(item.dataset.page));
+});
+
+// ============================================================
+// PROBLEM FILTERS & POOL
+// ============================================================
+function buildPool(opts = {}) {
+  let pool = [...problems];
+  if (opts.year && opts.year !== 'all') pool = pool.filter(p => p.Year === opts.year);
+  if (opts.part && opts.part !== 'all') pool = pool.filter(p => p.P === opts.part);
+  if (opts.prob && opts.prob !== 'all') pool = pool.filter(p => p.PN === opts.prob);
+
+  const attempts = loadAttempts();
+  const settings = loadSettings();
+
+  if (opts.noRepeat) {
+    pool = pool.filter(p => !attempts[p.ID] || attempts[p.ID].length === 0);
+  }
+  if (opts.onlyWrong) {
+    pool = pool.filter(p => {
+      const hist = attempts[p.ID];
+      if (!hist || hist.length === 0) return true; // unseen
+      return !hist.some(a => a.correct);
+    });
+  }
+
+  // Shuffle
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool;
+}
+
+// ============================================================
+// PRACTICE SESSION
+// ============================================================
+function startSession() {
+  const year = document.getElementById('filter-year').value;
+  const part = document.getElementById('filter-part').value;
+  const prob = document.getElementById('filter-prob').value;
+  const noRepeat = document.getElementById('no-repeat').checked;
+  const onlyWrong = document.getElementById('only-wrong').checked;
+
+  sessionQueue = buildPool({ year, part, prob, noRepeat, onlyWrong });
+  sessionIndex = 0;
+
+  if (!sessionQueue.length) {
+    alert('No problems match your filters! Try relaxing the criteria.');
+    return;
+  }
+
+  document.getElementById('practice-config').style.display = 'none';
+  document.getElementById('question-card').classList.add('active');
+  showQuestion(sessionQueue[0]);
+}
+
+function showQuestion(problem) {
+  currentProblem = problem;
+  const settings = loadSettings();
+
+  // Meta badges
+  const meta = document.getElementById('question-meta');
+  let metaHTML = `<span class="badge badge-accent">${problem.Year}</span>`;
+  if (problem.P) metaHTML += `<span class="badge">Part ${problem.P}</span>`;
+  metaHTML += `<span class="badge">Problem ${problem.PN}</span>`;
+  if (settings.showid) metaHTML += `<span class="badge" style="opacity:0.6;font-family:var(--font-mono);font-size:11px;">${problem.ID}</span>`;
+  meta.innerHTML = metaHTML;
+
+  // Question body
+  document.getElementById('question-body').innerHTML = String(problem.Q || '').replace(/\n/g, '<br>');
+
+  // Progress
+  const pct = sessionQueue.length > 1 ? (sessionIndex / (sessionQueue.length - 1)) * 100 : 0;
+  document.getElementById('session-progress').style.width = pct + '%';
+  document.getElementById('session-counter').textContent = `Problem ${sessionIndex + 1} of ${sessionQueue.length}`;
+
+  // Reset UI
+  document.getElementById('answer-input').value = '';
+  document.getElementById('result-banner').className = 'result-banner';
+  document.getElementById('result-banner').innerHTML = '';
+  document.getElementById('post-answer-area').style.display = 'none';
+  document.getElementById('answer-input').disabled = false;
+  document.getElementById('submit-btn').disabled = false;
+  document.getElementById('reveal-btn').style.display = '';
+  document.getElementById('answer-input').focus();
+
+  // Render LaTeX
+  typeset('#question-body');
+}
+
+function submitAnswer() {
+  const val = document.getElementById('answer-input').value.trim();
+  if (val === '') { alert('Please enter an answer.'); return; }
+  const userAns = parseInt(val, 10);
+  const correctAns = parseInt(currentProblem.A, 10);
+  const correct = userAns === correctAns;
+
+  recordAttempt(currentProblem.ID, correct, userAns, correctAns);
+
+  const banner = document.getElementById('result-banner');
+  banner.className = 'result-banner show ' + (correct ? 'correct' : 'wrong');
+  banner.innerHTML = correct
+    ? `✅ Correct! The answer is <strong>${correctAns}</strong>.`
+    : `❌ Incorrect. Your answer: <strong>${userAns}</strong> — Correct: <strong>${correctAns}</strong>`;
+
+  document.getElementById('answer-input').disabled = true;
+  document.getElementById('submit-btn').disabled = true;
+  document.getElementById('reveal-btn').style.display = 'none';
+  document.getElementById('post-answer-area').style.display = 'block';
+
+  const settings = loadSettings();
+  if (correct && settings.autoadvance) {
+    setTimeout(() => nextQuestion(), 1200);
+  }
+}
+
+function revealAnswer() {
+  const correctAns = parseInt(currentProblem.A, 10);
+  const banner = document.getElementById('result-banner');
+  banner.className = 'result-banner show';
+  banner.style.background = 'rgba(108,142,245,0.1)';
+  banner.style.borderColor = 'var(--accent)';
+  banner.style.color = 'var(--accent)';
+  banner.innerHTML = `💡 The answer is <strong>${correctAns}</strong>`;
+  recordAttempt(currentProblem.ID, false, null, correctAns);
+  document.getElementById('answer-input').disabled = true;
+  document.getElementById('submit-btn').disabled = true;
+  document.getElementById('reveal-btn').style.display = 'none';
+  document.getElementById('post-answer-area').style.display = 'block';
+}
+
+function nextQuestion() {
+  sessionIndex++;
+  if (sessionIndex >= sessionQueue.length) {
+    endSession();
+    return;
+  }
+  showQuestion(sessionQueue[sessionIndex]);
+}
+
+function endSession() {
+  document.getElementById('question-card').classList.remove('active');
+  document.getElementById('practice-config').style.display = '';
+  currentProblem = null;
+  // Show a quick summary
+  const attempts = loadAttempts();
+  const done = sessionQueue.slice(0, sessionIndex + 1);
+  const correct = done.filter(p => {
+    const hist = attempts[p.ID];
+    return hist && hist.length && hist[hist.length-1].correct;
+  }).length;
+  if (done.length > 0) {
+    alert(`Session complete!\n✅ Correct: ${correct} / ${done.length}\nAccuracy: ${Math.round(correct/done.length*100)}%`);
+  }
+}
+
+function skipQuestion() {
+  const settings = loadSettings();
+  if (settings.confirmSkip && !confirm('Skip this problem?')) return;
+  nextQuestion();
+}
+
+document.getElementById('start-practice').addEventListener('click', startSession);
+document.getElementById('submit-btn').addEventListener('click', submitAnswer);
+document.getElementById('reveal-btn').addEventListener('click', revealAnswer);
+document.getElementById('next-btn').addEventListener('click', nextQuestion);
+document.getElementById('end-session-btn').addEventListener('click', endSession);
+document.getElementById('skip-btn').addEventListener('click', skipQuestion);
+document.getElementById('answer-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitAnswer();
+});
+
+// Quick start buttons
+document.getElementById('quick-random').addEventListener('click', () => {
+  navigate('practice');
+  document.getElementById('filter-year').value = 'all';
+  document.getElementById('filter-part').value = 'all';
+  document.getElementById('filter-prob').value = 'all';
+  document.getElementById('no-repeat').checked = false;
+  document.getElementById('only-wrong').checked = false;
+  startSession();
+});
+document.getElementById('quick-unseen').addEventListener('click', () => {
+  navigate('practice');
+  document.getElementById('no-repeat').checked = true;
+  document.getElementById('only-wrong').checked = false;
+  startSession();
+});
+document.getElementById('quick-wrong').addEventListener('click', () => {
+  navigate('practice');
+  document.getElementById('no-repeat').checked = false;
+  document.getElementById('only-wrong').checked = true;
+  startSession();
+});
+
+// ============================================================
+// BROWSE
+// ============================================================
+function renderBrowse() {
+  const year = document.getElementById('browse-year').value;
+  const part = document.getElementById('browse-part').value;
+
+  let pool = problems.filter(p => p.Year === year);
+  if (part !== 'all') pool = pool.filter(p => p.P === part);
+
+  const attempts = loadAttempts();
+  const grid = document.getElementById('browse-grid');
+  grid.innerHTML = '';
+
+  pool.forEach(p => {
+    const btn = document.createElement('div');
+    btn.className = 'prob-btn';
+    btn.textContent = p.PN;
+    const hist = attempts[p.ID];
+    if (hist && hist.length) {
+      if (hist.some(a => a.correct)) btn.classList.add('done-correct');
+      else btn.classList.add('done-wrong');
+    }
+    btn.addEventListener('click', () => showBrowseProblem(p));
+    grid.appendChild(btn);
+  });
+
+  document.getElementById('browse-problem-card').style.display = 'none';
+}
+
+function showBrowseProblem(p) {
+  const card = document.getElementById('browse-problem-card');
+  card.style.display = 'block';
+
+  const meta = document.getElementById('browse-question-meta');
+  meta.innerHTML = `
+    <span class="badge badge-accent">${p.Year}</span>
+    ${p.P ? `<span class="badge">Part ${p.P}</span>` : ''}
+    <span class="badge">Problem ${p.PN}</span>
+    <span class="badge" style="font-family:var(--font-mono);font-size:11px;">${p.ID}</span>
+  `;
+
+  document.getElementById('browse-question-body').innerHTML = p.Q.replace(/\n/g,'<br>');
+  document.getElementById('browse-answer-reveal').style.display = 'none';
+  document.getElementById('browse-answer-reveal').textContent = p.A;
+  document.getElementById('browse-reveal-ans').style.display = '';
+
+  document.getElementById('browse-practice-btn').onclick = () => {
+    navigate('practice');
+    // Set filters to show this problem
+    sessionQueue = [p];
+    sessionIndex = 0;
+    document.getElementById('practice-config').style.display = 'none';
+    document.getElementById('question-card').classList.add('active');
+    showQuestion(p);
+  };
+
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  typeset('#browse-question-body');
+}
+
+document.getElementById('browse-reveal-ans').addEventListener('click', () => {
+  document.getElementById('browse-answer-reveal').style.display = 'inline';
+  document.getElementById('browse-reveal-ans').style.display = 'none';
+});
+
+document.getElementById('browse-year').addEventListener('change', renderBrowse);
+document.getElementById('browse-part').addEventListener('change', renderBrowse);
+
+// ============================================================
+// HOME PAGE
+// ============================================================
+function renderHome() {
+  const attempts = loadAttempts();
+  const allAttempts = [];
+  Object.entries(attempts).forEach(([id, arr]) => arr.forEach(a => allAttempts.push({ id, ...a })));
+
+  const total = allAttempts.length;
+  const correct = allAttempts.filter(a => a.correct).length;
+  const seen = new Set(allAttempts.map(a => a.id)).size;
+  const acc = total ? Math.round(correct / total * 100) : 0;
+
+  document.getElementById('home-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-value">${total}</div>
+      <div class="stat-label">Total Attempts</div>
+    </div>
+    <div class="stat-card stat-correct">
+      <div class="stat-value">${correct}</div>
+      <div class="stat-label">Correct</div>
+    </div>
+    <div class="stat-card stat-wrong">
+      <div class="stat-value">${total - correct}</div>
+      <div class="stat-label">Wrong</div>
+    </div>
+    <div class="stat-card stat-accent2">
+      <div class="stat-value">${acc}%</div>
+      <div class="stat-label">Accuracy</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${seen}</div>
+      <div class="stat-label">Unique Problems</div>
+      <div class="stat-sub">of ${problems.length}</div>
+    </div>
+  `;
+
+  // Year accuracy chart (decade buckets)
+  renderYearAccChart(allAttempts);
+  // Recent activity
+  renderRecentChart(allAttempts);
+}
+
+function renderYearAccChart(allAttempts) {
+  const ctx = document.getElementById('chart-year-acc');
+  if (!ctx) return;
+  if (charts['year-acc']) charts['year-acc'].destroy();
+
+  // Group by decade
+  const decades = {};
+  allAttempts.forEach(a => {
+    const prob = problems.find(p => p.ID === a.id);
+    if (!prob) return;
+    const decade = Math.floor(parseInt(prob.Year) / 10) * 10 + 's';
+    if (!decades[decade]) decades[decade] = { c: 0, t: 0 };
+    decades[decade].t++;
+    if (a.correct) decades[decade].c++;
+  });
+
+  const labels = Object.keys(decades).sort();
+  const data = labels.map(d => decades[d].t ? Math.round(decades[d].c / decades[d].t * 100) : 0);
+
+  charts['year-acc'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label: 'Accuracy %', data, backgroundColor: getAccentColor(0.7), borderColor: getAccentColor(1), borderWidth: 2, borderRadius: 6 }]
+    },
+    options: chartOptions({ max: 100, unit: '%' })
+  });
+}
+
+function renderRecentChart(allAttempts) {
+  const ctx = document.getElementById('chart-recent');
+  if (!ctx) return;
+  if (charts['recent']) charts['recent'].destroy();
+
+  const days = 14;
+  const labels = [];
+  const correctData = [];
+  const wrongData = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const ds = d.toISOString().slice(0, 10);
+    labels.push(ds.slice(5));
+    const dayAttempts = allAttempts.filter(a => a.date?.slice(0, 10) === ds);
+    correctData.push(dayAttempts.filter(a => a.correct).length);
+    wrongData.push(dayAttempts.filter(a => !a.correct).length);
+  }
+
+  charts['recent'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Correct', data: correctData, borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.1)', fill: true, tension: 0.4, borderWidth: 2 },
+        { label: 'Wrong', data: wrongData, borderColor: '#f87171', backgroundColor: 'rgba(248,113,113,0.1)', fill: true, tension: 0.4, borderWidth: 2 }
+      ]
+    },
+    options: chartOptions({})
+  });
+}
+
+// ============================================================
+// STATS PAGE
+// ============================================================
+let statsRange = 'week';
+
+function renderStats() {
+  const attempts = loadAttempts();
+  const now = new Date();
+
+  function cutoff(range) {
+    const d = new Date();
+    if (range === 'week') d.setDate(d.getDate() - 7);
+    else if (range === 'month') d.setMonth(d.getMonth() - 1);
+    else if (range === 'year') d.setFullYear(d.getFullYear() - 1);
+    else return new Date(0);
+    return d;
+  }
+
+  const cut = cutoff(statsRange);
+  const allAttempts = [];
+  Object.entries(attempts).forEach(([id, arr]) => arr.forEach(a => allAttempts.push({ id, ...a })));
+  const filtered = allAttempts.filter(a => new Date(a.date) >= cut);
+
+  const total = filtered.length;
+  const correct = filtered.filter(a => a.correct).length;
+  const acc = total ? Math.round(correct / total * 100) : 0;
+  const streak = calcStreak(allAttempts);
+
+  document.getElementById('stats-summary').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-value">${total}</div>
+      <div class="stat-label">Attempts</div>
+    </div>
+    <div class="stat-card stat-correct">
+      <div class="stat-value">${correct}</div>
+      <div class="stat-label">Correct</div>
+    </div>
+    <div class="stat-card stat-wrong">
+      <div class="stat-value">${total - correct}</div>
+      <div class="stat-label">Wrong</div>
+    </div>
+    <div class="stat-card stat-accent2">
+      <div class="stat-value">${acc}%</div>
+      <div class="stat-label">Accuracy</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${streak}</div>
+      <div class="stat-label">Day Streak 🔥</div>
+    </div>
+  `;
+
+  renderTimelineChart(filtered);
+  renderByPartChart(filtered);
+  renderByProbNumChart(filtered);
+  renderByYearChart(filtered);
+}
+
+function calcStreak(allAttempts) {
+  if (!allAttempts.length) return 0;
+  const days = new Set(allAttempts.map(a => a.date?.slice(0, 10)));
+  let streak = 0, d = new Date();
+  while (true) {
+    const ds = d.toISOString().slice(0, 10);
+    if (days.has(ds)) { streak++; d.setDate(d.getDate() - 1); }
+    else break;
+  }
+  return streak;
+}
+
+function renderTimelineChart(filtered) {
+  const ctx = document.getElementById('chart-timeline');
+  if (charts['timeline']) charts['timeline'].destroy();
+
+  // Group by day
+  const byDay = {};
+  filtered.forEach(a => {
+    const day = a.date?.slice(0, 10) || 'unknown';
+    if (!byDay[day]) byDay[day] = { c: 0, w: 0 };
+    a.correct ? byDay[day].c++ : byDay[day].w++;
+  });
+  const labels = Object.keys(byDay).sort();
+  charts['timeline'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels.map(l => l.slice(5)),
+      datasets: [
+        { label: 'Correct', data: labels.map(l => byDay[l].c), backgroundColor: 'rgba(52,211,153,0.8)', borderRadius: 4 },
+        { label: 'Wrong', data: labels.map(l => byDay[l].w), backgroundColor: 'rgba(248,113,113,0.8)', borderRadius: 4 }
+      ]
+    },
+    options: { ...chartOptions({}), plugins: { ...chartOptions({}).plugins }, scales: { x: { stacked: true, ...chartScaleX() }, y: { stacked: true, ...chartScaleY() } } }
+  });
+}
+
+function renderByPartChart(filtered) {
+  const ctx = document.getElementById('chart-by-part');
+  if (charts['by-part']) charts['by-part'].destroy();
+
+  const parts = { 'Classic': { c: 0, t: 0 }, 'Part I': { c: 0, t: 0 }, 'Part II': { c: 0, t: 0 } };
+  filtered.forEach(a => {
+    const prob = problems.find(p => p.ID === a.id);
+    if (!prob) return;
+    const key = !prob.P ? 'Classic' : `Part ${prob.P}`;
+    parts[key].t++;
+    if (a.correct) parts[key].c++;
+  });
+
+  charts['by-part'] = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(parts),
+      datasets: [{
+        data: Object.values(parts).map(v => v.t ? Math.round(v.c / v.t * 100) : 0),
+        backgroundColor: ['rgba(108,142,245,0.8)', 'rgba(167,139,250,0.8)', 'rgba(94,207,128,0.8)'],
+        borderWidth: 0, borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#9198b5', font: { family: 'Outfit' } } } }
+    }
+  });
+}
+
+function renderByProbNumChart(filtered) {
+  const ctx = document.getElementById('chart-by-probnum');
+  if (charts['by-probnum']) charts['by-probnum'].destroy();
+
+  const byNum = {};
+  filtered.forEach(a => {
+    const prob = problems.find(p => p.ID === a.id);
+    if (!prob) return;
+    const n = prob.PN;
+    if (!byNum[n]) byNum[n] = { c: 0, t: 0 };
+    byNum[n].t++;
+    if (a.correct) byNum[n].c++;
+  });
+
+  const labels = Object.keys(byNum).map(Number).sort((a,b)=>a-b).map(String);
+  charts['by-probnum'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label: 'Accuracy %', data: labels.map(n => byNum[n].t ? Math.round(byNum[n].c / byNum[n].t * 100) : 0), backgroundColor: getAccentColor(0.75), borderRadius: 4 }]
+    },
+    options: chartOptions({ max: 100, unit: '%' })
+  });
+}
+
+function renderByYearChart(filtered) {
+  const ctx = document.getElementById('chart-by-year');
+  if (charts['by-year']) charts['by-year'].destroy();
+
+  const byYear = {};
+  filtered.forEach(a => {
+    const prob = problems.find(p => p.ID === a.id);
+    if (!prob) return;
+    const y = prob.Year;
+    if (!byYear[y]) byYear[y] = { c: 0, t: 0 };
+    byYear[y].t++;
+    if (a.correct) byYear[y].c++;
+  });
+
+  const labels = Object.keys(byYear).sort();
+  charts['by-year'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label: 'Accuracy %', data: labels.map(y => byYear[y].t ? Math.round(byYear[y].c / byYear[y].t * 100) : 0), backgroundColor: labels.map((_, i) => `hsl(${220 + i * 3}, 70%, 60%)`), borderRadius: 4 }]
+    },
+    options: chartOptions({ max: 100, unit: '%' })
+  });
+}
+
+document.getElementById('stats-time-filter').addEventListener('click', e => {
+  const btn = e.target.closest('.toggle-btn');
+  if (!btn) return;
+  document.querySelectorAll('#stats-time-filter .toggle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  statsRange = btn.dataset.range;
+  renderStats();
+});
+
+// ============================================================
+// HISTORY PAGE
+// ============================================================
+function renderHistory() {
+  const attempts = loadAttempts();
+  const histYear = document.getElementById('hist-year').value;
+  const histResult = document.getElementById('hist-result').value;
+
+  const rows = [];
+  Object.entries(attempts).forEach(([id, arr]) => {
+    arr.forEach(a => rows.push({ id, ...a }));
+  });
+  rows.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  let filtered = rows;
+  if (histYear !== 'all') filtered = filtered.filter(r => {
+    const p = problems.find(x => x.ID === r.id);
+    return p && p.Year === histYear;
+  });
+  if (histResult !== 'all') filtered = filtered.filter(r => histResult === 'correct' ? r.correct : !r.correct);
+
+  const tbody = document.getElementById('history-tbody');
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px; color:var(--text3);">No attempts yet. Start practicing!</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.slice(0, 200).map(r => {
+    const prob = problems.find(p => p.ID === r.id);
+    return `<tr>
+      <td>${r.id}</td>
+      <td>${prob?.Year || '—'}</td>
+      <td>${prob?.P || 'Classic'}</td>
+      <td>${prob?.PN || '—'}</td>
+      <td style="font-family:var(--font-mono);">${r.userAnswer ?? '—'}</td>
+      <td style="font-family:var(--font-mono); color:var(--accent);">${r.correctAnswer ?? prob?.A ?? '—'}</td>
+      <td><span class="pill ${r.correct ? 'pill-correct' : 'pill-wrong'}">${r.correct ? '✓' : '✗'}</span></td>
+      <td style="font-size:12px;">${r.date ? new Date(r.date).toLocaleString() : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+document.getElementById('hist-year').addEventListener('change', renderHistory);
+document.getElementById('hist-result').addEventListener('change', renderHistory);
+
+document.getElementById('export-btn').addEventListener('click', () => {
+  const attempts = loadAttempts();
+  let csv = 'ID,Year,Part,Problem Number,Your Answer,Correct Answer,Result,Date\n';
+  Object.entries(attempts).forEach(([id, arr]) => {
+    const prob = problems.find(p => p.ID === id);
+    arr.forEach(a => {
+      csv += `${id},${prob?.Year||''},${prob?.P||''},${prob?.PN||''},${a.userAnswer??''},${a.correctAnswer??''},${a.correct?'correct':'wrong'},${a.date||''}\n`;
+    });
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'aimelab_history.csv'; a.click();
+});
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function applySettings(s) {
+  document.documentElement.dataset.theme = s.theme;
+  document.documentElement.dataset.fontSize = s.fontSize;
+  if (s.hcontrast) {
+    const hc = {
+      dark:   { text: '#ffffff', text2: '#d0d4f0', text3: '#a0a8cc', border: '#6070c0' },
+      light:  { text: '#000000', text2: '#111630', text3: '#2a3060', border: '#4a5080' },
+      sepia:  { text: '#fff8e8', text2: '#f0ddb0', text3: '#c8a860', border: '#c09040' },
+      forest: { text: '#f0fff4', text2: '#c0f0cc', text3: '#70d888', border: '#40b860' },
+    }[s.theme] || { text: '#ffffff', text2: '#d0d4f0', text3: '#a0a8cc', border: '#6070c0' };
+    document.documentElement.style.setProperty('--text',   hc.text);
+    document.documentElement.style.setProperty('--text2',  hc.text2);
+    document.documentElement.style.setProperty('--text3',  hc.text3);
+    document.documentElement.style.setProperty('--border', hc.border);
+  } else {
+    document.documentElement.style.removeProperty('--text');
+    document.documentElement.style.removeProperty('--text2');
+    document.documentElement.style.removeProperty('--text3');
+    document.documentElement.style.removeProperty('--border');
+  }
+  if (s.reducemotion) {
+    document.documentElement.style.setProperty('--transition', '0s');
+  } else {
+    document.documentElement.style.removeProperty('--transition');
+  }
+  if (s.largetargets) {
+    document.documentElement.style.setProperty('--btn-padding', '14px 24px');
+    document.documentElement.style.setProperty('font-size', '17px');
+  } else {
+    document.documentElement.style.removeProperty('--btn-padding');
+    document.documentElement.style.removeProperty('font-size');
+  }
+
+  // Sync UI
+  document.querySelectorAll('.theme-swatch').forEach(s2 => s2.classList.toggle('active', s2.dataset.theme === s.theme));
+  document.querySelectorAll('.font-size-btn').forEach(b => b.classList.toggle('active', b.dataset.size === s.fontSize));
+  document.getElementById('setting-autoadvance').checked = s.autoadvance;
+  document.getElementById('setting-showid').checked = s.showid;
+  document.getElementById('setting-confirm-skip').checked = s.confirmSkip;
+  document.getElementById('setting-hcontrast').checked = s.hcontrast;
+  document.getElementById('setting-reducemotion').checked = s.reducemotion;
+  document.getElementById('setting-largetargets').checked = s.largetargets;
+}
+
+document.querySelectorAll('.theme-swatch').forEach(sw => {
+  sw.addEventListener('click', () => {
+    const s = loadSettings(); s.theme = sw.dataset.theme; saveSettings(s); applySettings(s);
+  });
+});
+
+document.querySelectorAll('.font-size-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const s = loadSettings(); s.fontSize = btn.dataset.size; saveSettings(s); applySettings(s);
+  });
+});
+
+['setting-autoadvance', 'setting-showid', 'setting-confirm-skip', 'setting-hcontrast', 'setting-reducemotion', 'setting-largetargets'].forEach(id => {
+  document.getElementById(id).addEventListener('change', function() {
+    const s = loadSettings();
+    const key = { 'setting-autoadvance': 'autoadvance', 'setting-showid': 'showid', 'setting-confirm-skip': 'confirmSkip', 'setting-hcontrast': 'hcontrast', 'setting-reducemotion': 'reducemotion', 'setting-largetargets': 'largetargets' }[id];
+    s[key] = this.checked;
+    saveSettings(s); applySettings(s);
+  });
+});
+
+document.getElementById('export-data-btn').addEventListener('click', () => {
+  const data = { attempts: loadAttempts(), settings: loadSettings() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob); const a = document.createElement('a');
+  a.href = url; a.download = 'aimelab_data.json'; a.click();
+});
+
+document.getElementById('clear-data-btn').addEventListener('click', () => {
+  if (confirm('This will permanently delete all your attempt history. Are you sure?')) {
+    localStorage.removeItem(LS.attempts);
+    alert('Data cleared.');
+  }
+});
+
+document.getElementById('reset-progress-btn').addEventListener('click', () => {
+  if (confirm('Reset ALL data? This cannot be undone.')) {
+    localStorage.removeItem(LS.attempts);
+    alert('Progress reset.');
+    navigate('home');
+  }
+});
+
+// ============================================================
+// CHART HELPERS
+// ============================================================
+function getAccentColor(alpha) {
+  const theme = document.documentElement.dataset.theme;
+  if (theme === 'sepia') return `rgba(212,168,90,${alpha})`;
+  if (theme === 'forest') return `rgba(94,207,128,${alpha})`;
+  return `rgba(108,142,245,${alpha})`;
+}
+
+function chartScaleX() {
+  return { ticks: { color: '#9198b5', font: { family: 'Outfit', size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' } };
+}
+function chartScaleY(max, unit) {
+  return {
+    ticks: { color: '#9198b5', font: { family: 'Outfit', size: 11 }, callback: v => unit ? v + unit : v },
+    grid: { color: 'rgba(255,255,255,0.05)' },
+    ...(max ? { max } : {})
+  };
+}
+function chartOptions(opts = {}) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: '#9198b5', font: { family: 'Outfit', size: 12 } } } },
+    scales: { x: chartScaleX(), y: chartScaleY(opts.max, opts.unit) }
+  };
+}
+
+// ============================================================
+// MATHJAX HELPER
+// ============================================================
+function typeset(selector) {
+  if (window.MathJax && MathJax.typesetPromise) {
+    const el = selector ? document.querySelectorAll(selector) : [document.body];
+    MathJax.typesetPromise([...el]).catch(console.error);
+  }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+
+  const settings = loadSettings();
+  applySettings(settings);
+
+  try {
+
+    // Load local dataset
+    const DATASET_URL = './dataset/AIME_Dataset_1983_2024.csv';
+
+    const resp = await fetch(DATASET_URL);
+
+    if (!resp.ok) {
+      throw new Error('HTTP ' + resp.status);
+    }
+
+    const text = await resp.text();
+
+    // Parse CSV
+    problems = Papa.parse(text, {
+      header: true,
+      skipEmptyLines: true
+    }).data
+      .filter(r => r.Question && r.Answer)
+      .map(r => ({
+        ID: r.ID,
+        Year: r.Year,
+        PN: r['Problem Number'],
+        Q: r.Question,
+        A: r.Answer,
+        P: r.Part
+      }));
+
+    console.log('Loaded local dataset:', problems.length);
+
+  } catch (err) {
+
+    console.error('Dataset loading failed:', err);
+
+    document.getElementById('loading-overlay').innerHTML = `
+      <p style="color:var(--wrong); font-weight:600;">
+        Failed to load dataset.
+      </p>
+    `;
+
+    return;
+  }
+
+  // Populate year selects
+  const years = [...new Set(problems.map(p => p.Year))]
+    .filter(Boolean)
+    .sort();
+
+  const yearSelects = ['filter-year', 'browse-year', 'hist-year'];
+
+  yearSelects.forEach(id => {
+
+    const sel = document.getElementById(id);
+
+    const hasAll = id !== 'browse-year';
+
+    sel.innerHTML = '';
+
+    if (hasAll) {
+      sel.innerHTML = '<option value="all">All Years</option>';
+    }
+
+    years.forEach(y => {
+      const o = document.createElement('option');
+      o.value = y;
+      o.textContent = y;
+      sel.appendChild(o);
+    });
+  });
+
+  // Default browse year
+  if (years.includes('2024')) {
+    document.getElementById('browse-year').value = '2024';
+  }
+
+  // Populate problem number select
+  const probSel = document.getElementById('filter-prob');
+
+  probSel.innerHTML = '<option value="all">Any</option>';
+
+  for (let i = 1; i <= 15; i++) {
+    const o = document.createElement('option');
+    o.value = String(i);
+    o.textContent = `#${i}`;
+    probSel.appendChild(o);
+  }
+
+  // Hide loading overlay
+  document.getElementById('loading-overlay').style.display = 'none';
+
+  // Initial render
+  renderHome();
+  renderBrowse();
+}
+
+init();
+</script>
+</body>
+</html>
