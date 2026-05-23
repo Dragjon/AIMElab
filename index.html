@@ -899,37 +899,46 @@ async function renderProblemText(text) {
 
   const asyBlocks = [];
 
-  // 1. Replace [asy] blocks with placeholders first
+  // 1. ASY BLOCKS → placeholders
   text = text.replace(
     /\[asy\]([\s\S]*?)\[\/asy\]/g,
     (_, asyCode) => {
       const cleanedAsyCode = asyCode
         .split('\n')
         .map(line => line.trim())
-        .filter(line => line.length > 0)
+        .filter(Boolean)
         .join('\n');
 
       const id = crypto.randomUUID();
-      const placeholder = `__ASY_${id}__`;
+      const placeholder = `asy_${id}`;
 
       asyBlocks.push({ id, code: cleanedAsyCode });
 
-      return `<div id="${placeholder}" class="asy-container" style="text-align:center; margin:16px 0;"></div>`;
+      return `<div id="${placeholder}" class="asy-container" style="text-align:center;margin:16px 0;"></div>`;
     }
   );
 
-  // 2. Convert line breaks
+  // 2. IMAGE FILES → real <img>
+  text = text.replace(
+    /([A-Za-z0-9_\-\s]+\.png)/g,
+    (match) => {
+      const file = match.trim().replace(/\s+/g, '%20');
+      return `<div style="text-align:center;margin:16px 0;">
+                <img src="/images/${file}" style="max-width:100%;border-radius:12px;" />
+              </div>`;
+    }
+  );
+
+  // 3. line breaks
   text = text.replace(/\n/g, '<br>');
 
-  // 3. After DOM is rendered, fetch images from your API
+  // 4. render ASY AFTER DOM paint
   setTimeout(async () => {
     for (const block of asyBlocks) {
       try {
         const res = await fetch("https://asymptote-renderer-1.onrender.com/render", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code: block.code })
         });
 
@@ -938,9 +947,11 @@ async function renderProblemText(text) {
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
 
-        const el = document.getElementById(`__ASY_${block.id}__`);
+        const el = document.getElementById(`asy_${block.id}`);
         if (el) {
-          el.innerHTML = `<img src="${url}" style="max-width:100%; border-radius:12px; margin:16px 0;" />`;
+          el.innerHTML = `
+            <img src="${url}" style="max-width:100%;border-radius:12px;margin:16px 0;" />
+          `;
         }
       } catch (err) {
         console.error("Asy render failed:", err);
@@ -951,7 +962,8 @@ async function renderProblemText(text) {
   return text;
 }
 
-function showQuestion(problem) {
+
+async function showQuestion(problem) {
   currentProblem = problem;
   const settings = loadSettings();
 
@@ -960,19 +972,24 @@ function showQuestion(problem) {
   let metaHTML = `<span class="badge badge-accent">${problem.Year}</span>`;
   if (problem.P) metaHTML += `<span class="badge">Part ${problem.P}</span>`;
   metaHTML += `<span class="badge">Problem ${problem.PN}</span>`;
-  if (settings.showid) metaHTML += `<span class="badge" style="opacity:0.6;font-family:var(--font-mono);font-size:11px;">${problem.ID}</span>`;
+  if (settings.showid)
+    metaHTML += `<span class="badge" style="opacity:0.6;font-family:var(--font-mono);font-size:11px;">${problem.ID}</span>`;
   meta.innerHTML = metaHTML;
 
-  // Question body
-  (async () => {
-    document.getElementById('question-body').innerHTML =
-      await renderProblemText(problem.Q);
-  })();
+  // ⚠️ wait for render BEFORE continuing
+  const html = await renderProblemText(problem.Q);
+  const body = document.getElementById('question-body');
+
+  body.innerHTML = html;
 
   // Progress
-  const pct = sessionQueue.length > 1 ? (sessionIndex / (sessionQueue.length - 1)) * 100 : 0;
+  const pct = sessionQueue.length > 1
+    ? (sessionIndex / (sessionQueue.length - 1)) * 100
+    : 0;
+
   document.getElementById('session-progress').style.width = pct + '%';
-  document.getElementById('session-counter').textContent = `Problem ${sessionIndex + 1} of ${sessionQueue.length}`;
+  document.getElementById('session-counter').textContent =
+    `Problem ${sessionIndex + 1} of ${sessionQueue.length}`;
 
   // Reset UI
   document.getElementById('answer-input').value = '';
@@ -984,9 +1001,12 @@ function showQuestion(problem) {
   document.getElementById('reveal-btn').style.display = '';
   document.getElementById('answer-input').focus();
 
-  // Render LaTeX
-  typeset('#question-body');
+  // LaTeX render AFTER DOM update
+  requestAnimationFrame(() => {
+    typeset('#question-body');
+  });
 }
+
 
 function submitAnswer() {
   const val = document.getElementById('answer-input').value.trim();
@@ -1626,7 +1646,10 @@ function chartOptions(opts = {}) {
 // ============================================================
 function typeset(selector) {
   if (window.MathJax && MathJax.typesetPromise) {
-    const el = selector ? document.querySelectorAll(selector) : [document.body];
+    const el = selector
+      ? document.querySelectorAll(selector)
+      : [document.body];
+
     MathJax.typesetPromise([...el]).catch(console.error);
   }
 }
