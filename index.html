@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>AIMElab — Olympiad Practice</title>
 
-<!-- MathJax -->
 <script>
 window.MathJax = {
   tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']], processEscapes: true },
@@ -15,10 +14,8 @@ window.MathJax = {
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.min.js"></script>
 
-<!-- Chart.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
-<!-- PapaParse -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
 <style>
@@ -399,7 +396,6 @@ input:checked + .slider::before { transform: translateX(20px); }
 
 <div id="app">
 
-<!-- SIDEBAR -->
 <nav id="sidebar">
   <div class="sidebar-logo">
     <div class="logo-icon">∑</div>
@@ -439,20 +435,16 @@ input:checked + .slider::before { transform: translateX(20px); }
   </div>
 </nav>
 
-<!-- MAIN -->
 <main id="main">
 
-  <!-- ===== HOME PAGE ===== -->
   <div class="page active" id="page-home">
     <div class="page-header">
       <div class="page-title">Welcome back 👋</div>
       <div class="page-subtitle">AIME problems from 1983 – 2024. Track your progress, sharpen your skills.</div>
     </div>
 
-    <!-- Quick stats -->
     <div class="stats-grid" id="home-stats"></div>
 
-    <!-- Quick start -->
     <div class="card">
       <div class="card-title">Quick Start</div>
       <div class="flex-row" style="flex-wrap:wrap; gap:12px;">
@@ -462,7 +454,6 @@ input:checked + .slider::before { transform: translateX(20px); }
       </div>
     </div>
 
-    <!-- Streak / recent -->
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
       <div class="card">
         <div class="card-title">Accuracy by Year Range</div>
@@ -475,14 +466,12 @@ input:checked + .slider::before { transform: translateX(20px); }
     </div>
   </div>
 
-  <!-- ===== PRACTICE PAGE ===== -->
   <div class="page" id="page-practice">
     <div class="page-header">
       <div class="page-title">Practice</div>
       <div class="page-subtitle">Configure your session and start solving.</div>
     </div>
 
-    <!-- Config card -->
     <div class="card" id="practice-config">
       <div class="card-title">Session Settings</div>
       <div class="filter-row">
@@ -520,7 +509,6 @@ input:checked + .slider::before { transform: translateX(20px); }
       <button class="btn btn-primary" id="start-practice">▶ Start Session</button>
     </div>
 
-    <!-- Question card -->
     <div class="card" id="question-card">
       <div class="flex-between" style="margin-bottom:16px;">
         <div class="question-meta" id="question-meta"></div>
@@ -554,7 +542,6 @@ input:checked + .slider::before { transform: translateX(20px); }
     </div>
   </div>
 
-  <!-- ===== BROWSE PAGE ===== -->
   <div class="page" id="page-browse">
     <div class="page-header">
       <div class="page-title">Browse Problems</div>
@@ -578,7 +565,6 @@ input:checked + .slider::before { transform: translateX(20px); }
       </div>
       <div class="prob-grid" id="browse-grid"></div>
     </div>
-    <!-- View single problem -->
     <div class="card" id="browse-problem-card" style="display:none;">
       <div class="flex-between" style="margin-bottom:16px;">
         <div class="question-meta" id="browse-question-meta"></div>
@@ -592,14 +578,12 @@ input:checked + .slider::before { transform: translateX(20px); }
     </div>
   </div>
 
-  <!-- ===== STATS PAGE ===== -->
   <div class="page" id="page-stats">
     <div class="page-header">
       <div class="page-title">Statistics</div>
       <div class="page-subtitle">Your performance over time.</div>
     </div>
 
-    <!-- Time filter -->
     <div class="toggle-group" style="margin-bottom:24px;" id="stats-time-filter">
       <div class="toggle-btn active" data-range="week">This Week</div>
       <div class="toggle-btn" data-range="month">This Month</div>
@@ -632,7 +616,6 @@ input:checked + .slider::before { transform: translateX(20px); }
     </div>
   </div>
 
-  <!-- ===== HISTORY PAGE ===== -->
   <div class="page" id="page-history">
     <div class="page-header">
       <div class="flex-between">
@@ -678,7 +661,6 @@ input:checked + .slider::before { transform: translateX(20px); }
     </div>
   </div>
 
-  <!-- ===== SETTINGS PAGE ===== -->
   <div class="page" id="page-settings">
     <div class="page-header">
       <div class="page-title">Settings</div>
@@ -837,11 +819,6 @@ function getBestAttempt(id) {
 }
 
 // ============================================================
-// CSV LOADING
-// ============================================================
-// Dataset loaded inline
-
-// ============================================================
 // NAVIGATION
 // ============================================================
 function navigate(page) {
@@ -918,21 +895,27 @@ function startSession() {
 }
 
 function renderProblemText(text) {
-
   if (!text) return '';
 
   // Render Asymptote blocks
   text = text.replace(
     /\[asy\]([\s\S]*?)\[\/asy\]/g,
     (_, asyCode) => {
+      // FIX: Clean up indentation formatting from source code blocks line-by-line
+      const cleanedAsyCode = asyCode
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .join('\n');
 
-      const encoded = encodeURIComponent(asyCode);
+      const encoded = encodeURIComponent(cleanedAsyCode);
 
       return `
-        <div class="asy-container">
+        <div class="asy-container" style="text-align: center;">
           <img
             src="https://asymptote.ualberta.ca/cgi-bin/asy?f=image&script=${encoded}"
             style="max-width:100%; border-radius:12px; margin:16px 0;"
+            alt="Asymptote Diagram"
           />
         </div>
       `;
@@ -1127,14 +1110,14 @@ function showBrowseProblem(p) {
     <span class="badge" style="font-family:var(--font-mono);font-size:11px;">${p.ID}</span>
   `;
 
-  document.getElementById('browse-question-body').innerHTML = p.Q.replace(/\n/g,'<br>');
+  // FIX: Run text parser to handle [asy] and layout formatting on browse page
+  document.getElementById('browse-question-body').innerHTML = renderProblemText(p.Q);
   document.getElementById('browse-answer-reveal').style.display = 'none';
   document.getElementById('browse-answer-reveal').textContent = p.A;
   document.getElementById('browse-reveal-ans').style.display = '';
 
   document.getElementById('browse-practice-btn').onclick = () => {
     navigate('practice');
-    // Set filters to show this problem
     sessionQueue = [p];
     sessionIndex = 0;
     document.getElementById('practice-config').style.display = 'none';
@@ -1191,9 +1174,7 @@ function renderHome() {
     </div>
   `;
 
-  // Year accuracy chart (decade buckets)
   renderYearAccChart(allAttempts);
-  // Recent activity
   renderRecentChart(allAttempts);
 }
 
@@ -1202,7 +1183,6 @@ function renderYearAccChart(allAttempts) {
   if (!ctx) return;
   if (charts['year-acc']) charts['year-acc'].destroy();
 
-  // Group by decade
   const decades = {};
   allAttempts.forEach(a => {
     const prob = problems.find(p => p.ID === a.id);
@@ -1331,7 +1311,6 @@ function renderTimelineChart(filtered) {
   const ctx = document.getElementById('chart-timeline');
   if (charts['timeline']) charts['timeline'].destroy();
 
-  // Group by day
   const byDay = {};
   filtered.forEach(a => {
     const day = a.date?.slice(0, 10) || 'unknown';
@@ -1536,7 +1515,6 @@ function applySettings(s) {
     document.documentElement.style.removeProperty('font-size');
   }
 
-  // Sync UI
   document.querySelectorAll('.theme-swatch').forEach(s2 => s2.classList.toggle('active', s2.dataset.theme === s.theme));
   document.querySelectorAll('.font-size-btn').forEach(b => b.classList.toggle('active', b.dataset.size === s.fontSize));
   document.getElementById('setting-autoadvance').checked = s.autoadvance;
@@ -1632,24 +1610,15 @@ function typeset(selector) {
 // INIT
 // ============================================================
 async function init() {
-
   const settings = loadSettings();
   applySettings(settings);
 
   try {
-
-    // Load local dataset
     const DATASET_URL = './dataset/AIME_Dataset_1983_2024.csv';
-
     const resp = await fetch(DATASET_URL);
-
-    if (!resp.ok) {
-      throw new Error('HTTP ' + resp.status);
-    }
-
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const text = await resp.text();
 
-    // Parse CSV
     problems = Papa.parse(text, {
       header: true,
       skipEmptyLines: true
@@ -1665,68 +1634,38 @@ async function init() {
       }));
 
     console.log('Loaded local dataset:', problems.length);
-
   } catch (err) {
-
     console.error('Dataset loading failed:', err);
-
     document.getElementById('loading-overlay').innerHTML = `
-      <p style="color:var(--wrong); font-weight:600;">
-        Failed to load dataset.
-      </p>
+      <p style="color:var(--wrong); font-weight:600;">Failed to load dataset.</p>
     `;
-
     return;
   }
 
-  // Populate year selects
-  const years = [...new Set(problems.map(p => p.Year))]
-    .filter(Boolean)
-    .sort();
-
+  const years = [...new Set(problems.map(p => p.Year))].filter(Boolean).sort();
   const yearSelects = ['filter-year', 'browse-year', 'hist-year'];
 
   yearSelects.forEach(id => {
-
     const sel = document.getElementById(id);
-
     const hasAll = id !== 'browse-year';
-
     sel.innerHTML = '';
-
-    if (hasAll) {
-      sel.innerHTML = '<option value="all">All Years</option>';
-    }
-
+    if (hasAll) sel.innerHTML = '<option value="all">All Years</option>';
     years.forEach(y => {
       const o = document.createElement('option');
-      o.value = y;
-      o.textContent = y;
-      sel.appendChild(o);
+      o.value = y; o.textContent = y; sel.appendChild(o);
     });
   });
 
-  // Default browse year
-  if (years.includes('2024')) {
-    document.getElementById('browse-year').value = '2024';
-  }
+  if (years.includes('2024')) document.getElementById('browse-year').value = '2024';
 
-  // Populate problem number select
   const probSel = document.getElementById('filter-prob');
-
   probSel.innerHTML = '<option value="all">Any</option>';
-
   for (let i = 1; i <= 15; i++) {
     const o = document.createElement('option');
-    o.value = String(i);
-    o.textContent = `#${i}`;
-    probSel.appendChild(o);
+    o.value = String(i); o.textContent = `#${i}`; probSel.appendChild(o);
   }
 
-  // Hide loading overlay
   document.getElementById('loading-overlay').style.display = 'none';
-
-  // Initial render
   renderHome();
   renderBrowse();
 }
