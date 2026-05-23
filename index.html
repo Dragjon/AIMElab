@@ -1145,7 +1145,13 @@ function showBrowseProblem(p) {
   `;
 
   // FIX: Run text parser to handle [asy] and layout formatting on browse page
-  document.getElementById('browse-question-body').innerHTML = renderProblemText(p.Q);
+  (async () => {
+    document.getElementById('browse-question-body').innerHTML =
+      await renderProblemText(p.Q);
+
+    typeset('#browse-question-body');
+  })();
+
   document.getElementById('browse-answer-reveal').style.display = 'none';
   document.getElementById('browse-answer-reveal').textContent = p.A;
   document.getElementById('browse-reveal-ans').style.display = '';
