@@ -917,6 +917,34 @@ function startSession() {
   showQuestion(sessionQueue[0]);
 }
 
+function renderProblemText(text) {
+
+  if (!text) return '';
+
+  // Render Asymptote blocks
+  text = text.replace(
+    /\[asy\]([\s\S]*?)\[\/asy\]/g,
+    (_, asyCode) => {
+
+      const encoded = encodeURIComponent(asyCode);
+
+      return `
+        <div class="asy-container">
+          <img
+            src="https://asymptote.ualberta.ca/cgi-bin/asy?f=image&script=${encoded}"
+            style="max-width:100%; border-radius:12px; margin:16px 0;"
+          />
+        </div>
+      `;
+    }
+  );
+
+  // Newlines
+  text = text.replace(/\n/g, '<br>');
+
+  return text;
+}
+
 function showQuestion(problem) {
   currentProblem = problem;
   const settings = loadSettings();
@@ -930,7 +958,8 @@ function showQuestion(problem) {
   meta.innerHTML = metaHTML;
 
   // Question body
-  document.getElementById('question-body').innerHTML = String(problem.Q || '').replace(/\n/g, '<br>');
+  document.getElementById('question-body').innerHTML =
+    renderProblemText(problem.Q);
 
   // Progress
   const pct = sessionQueue.length > 1 ? (sessionIndex / (sessionQueue.length - 1)) * 100 : 0;
