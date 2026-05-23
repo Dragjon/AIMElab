@@ -894,30 +894,59 @@ function startSession() {
   showQuestion(sessionQueue[0]);
 }
 
-function renderProblemText(text) {
+async function renderProblemText(text) {
   if (!text) return '';
 
-  // 1. Process Asymptote blocks first
+  const asyBlocks = [];
+
+  // 1. Replace [asy] blocks with placeholders first
   text = text.replace(
     /\[asy\]([\s\S]*?)\[\/asy\]/g,
     (_, asyCode) => {
-      // Clean up line breaks and spacing from source code indentation
       const cleanedAsyCode = asyCode
         .split('\n')
         .map(line => line.trim())
         .filter(line => line.length > 0)
         .join('\n');
 
-      const encoded = encodeURIComponent(cleanedAsyCode);
+      const id = crypto.randomUUID();
+      const placeholder = `__ASY_${id}__`;
 
-      // Keep this entire string template on a single flat line!
-      // This guarantees no \n characters exist here to be accidentally replaced by <br> later.
-      return `<div class="asy-container tex2jax_ignore" style="text-align: center;"><img src="https://asymptote.ualberta.ca/cgi-bin/asy?f=image&script=${encoded}" style="max-width:100%; border-radius:12px; margin:16px 0;" alt="Asymptote Diagram" /></div>`;
+      asyBlocks.push({ id, code: cleanedAsyCode });
+
+      return `<div id="${placeholder}" class="asy-container" style="text-align:center; margin:16px 0;"></div>`;
     }
   );
 
-  // 2. Safely apply line breaks globally to everything else
+  // 2. Convert line breaks
   text = text.replace(/\n/g, '<br>');
+
+  // 3. After DOM is rendered, fetch images from your API
+  setTimeout(async () => {
+    for (const block of asyBlocks) {
+      try {
+        const res = await fetch("https://asymptote-renderer.onrender.com/render", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ code: block.code })
+        });
+
+        if (!res.ok) continue;
+
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+
+        const el = document.getElementById(`__ASY_${block.id}__`);
+        if (el) {
+          el.innerHTML = `<img src="${url}" style="max-width:100%; border-radius:12px; margin:16px 0;" />`;
+        }
+      } catch (err) {
+        console.error("Asy render failed:", err);
+      }
+    }
+  }, 0);
 
   return text;
 }
@@ -935,8 +964,10 @@ function showQuestion(problem) {
   meta.innerHTML = metaHTML;
 
   // Question body
-  document.getElementById('question-body').innerHTML =
-    renderProblemText(problem.Q);
+  (async () => {
+    document.getElementById('question-body').innerHTML =
+      await renderProblemText(problem.Q);
+  })();
 
   // Progress
   const pct = sessionQueue.length > 1 ? (sessionIndex / (sessionQueue.length - 1)) * 100 : 0;
