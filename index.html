@@ -2136,6 +2136,30 @@ async function init() {
   renderBrowse();
 }
 
+// ============================================================
+// KEEPALIVE — ping Render backend every 4 min to prevent spin-down
+// ============================================================
+(function keepAlive() {
+  const PING_URL = 'https://asymptote-renderer-2.onrender.com/render';
+  const INTERVAL = 4 * 60 * 1000; // 4 minutes
+
+  async function ping() {
+    try {
+      await fetch(PING_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: 'size(1);' }),
+        signal: AbortSignal.timeout(10000),
+      });
+    } catch (_) {
+      // silently ignore — this is just a keepalive
+    }
+  }
+
+  // First ping after 30s so it doesn't delay startup, then every 4 min
+  setTimeout(() => { ping(); setInterval(ping, INTERVAL); }, 30000);
+})();
+
 init();
 </script>
 </body>
