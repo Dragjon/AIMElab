@@ -964,8 +964,44 @@ async function renderProblemText(text) {
           body: JSON.stringify({ code: block.code })
         });
 
-        if (!res.ok) continue;
+        const contentType = res.headers.get("content-type") || "";
 
+        // 🔥 ALWAYS parse JSON first (because your API now returns JSON errors)
+        let data;
+        if (contentType.includes("application/json")) {
+          data = await res.json();
+        }
+
+        // ❌ Handle API-level error (your new format)
+        if (data?.status === "error") {
+          console.error("Asy error:", data);
+
+          const el = document.getElementById(`asy_${block.id}`);
+          if (el) {
+            el.innerHTML = `
+              <div style="
+                padding:12px;
+                border-radius:10px;
+                background:#fee2e2;
+                color:#991b1b;
+                font-size:13px;
+                margin:16px 0;
+              ">
+                ⚠️ Diagram failed: ${data.type}<br>
+                <span style="opacity:0.8">${data.message}</span>
+              </div>
+            `;
+          }
+
+          continue;
+        }
+
+        // ❌ fallback if response is not ok AND not JSON
+        if (!res.ok) {
+          throw new Error("Network error");
+        }
+
+        // 🖼️ success path (image blob)
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
 
@@ -977,18 +1013,33 @@ async function renderProblemText(text) {
                 style="width:40%;border-radius:12px;margin:16px 0;opacity:0;transition:opacity 0.3s;" />
           `;
 
-          // fade-in effect
           const img = el.querySelector("img");
           requestAnimationFrame(() => {
             img.style.opacity = "1";
           });
         }
+
       } catch (err) {
         console.error("Asy render failed:", err);
+
+        const el = document.getElementById(`asy_${block.id}`);
+        if (el) {
+          el.innerHTML = `
+            <div style="
+              padding:12px;
+              border-radius:10px;
+              background:#f3f4f6;
+              color:#374151;
+              font-size:13px;
+              margin:16px 0;
+            ">
+              ⚠️ Network error while rendering diagram
+            </div>
+          `;
+        }
       }
     }
   }, 0);
-
   return text;
 }
 
