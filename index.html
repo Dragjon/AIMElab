@@ -375,11 +375,152 @@ input:checked + .slider::before { transform: translateX(20px); }
 .prob-btn.done-correct { background: rgba(52,211,153,0.15); border-color: var(--correct); color: var(--correct); }
 .prob-btn.done-wrong { background: rgba(248,113,113,0.15); border-color: var(--wrong); color: var(--wrong); }
 
+/* ===== MOBILE BOTTOM NAV ===== */
+#mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  z-index: 100;
+  padding: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.3);
+}
+.mobile-nav-inner {
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+}
+.mobile-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 4px 8px;
+  cursor: pointer;
+  color: var(--text3);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: color var(--transition);
+  border: none;
+  background: none;
+  font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+.mobile-nav-item .mobile-nav-icon {
+  font-size: 20px;
+  line-height: 1;
+  transition: transform var(--transition);
+}
+.mobile-nav-item.active {
+  color: var(--accent);
+}
+.mobile-nav-item.active .mobile-nav-icon {
+  transform: translateY(-2px);
+}
+.mobile-nav-item.active::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 20%; right: 20%;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 0 0 2px 2px;
+}
+
+/* ===== MOBILE MENU OVERLAY ===== */
+#mobile-more-menu {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  border-radius: 20px 20px 0 0;
+  z-index: 200;
+  padding: 12px 16px 32px;
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.5);
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+#mobile-more-menu.open {
+  transform: translateY(0);
+}
+#mobile-more-menu.visible {
+  display: block;
+}
+.mobile-menu-handle {
+  width: 36px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 auto 16px;
+}
+.mobile-menu-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  font-weight: 700;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+.mobile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text2);
+  font-size: 15px;
+  font-weight: 500;
+  transition: all var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+.mobile-menu-item:hover, .mobile-menu-item:active { background: var(--bg3); color: var(--text); }
+.mobile-menu-item.active { color: var(--accent); background: var(--accent-glow); }
+.mobile-menu-item .menu-icon { font-size: 20px; width: 28px; text-align: center; }
+#mobile-overlay-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 199;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 700px) {
   #sidebar { display: none; }
+  #mobile-nav { display: block; }
+  #app { height: auto; min-height: 100vh; overflow: visible; }
+  #main { overflow: visible; padding-bottom: 70px; }
   .page { padding: 16px; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .page-title { font-size: 1.6rem; }
+
+  /* fix side-by-side charts on home */
+  #page-home > div[style*="grid-template-columns:1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* answer area stack */
+  .answer-area { flex-direction: column; align-items: stretch; }
+  .answer-area .btn { width: 100%; justify-content: center; }
+  #answer-input { width: 100%; }
+
+  /* filter rows on small screens */
+  .filter-row { flex-direction: column; }
+  .filter-row .form-group { min-width: unset; }
+
+  /* quick start buttons full-width */
+  #page-home .flex-row { flex-direction: column; }
+  #page-home .flex-row .btn { width: 100%; justify-content: center; }
+
+  /* history table horizontal scroll */
+  .history-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 }
 
 /* ===== MISC ===== */
@@ -463,6 +604,51 @@ input:checked + .slider::before { transform: translateX(20px); }
     </div>
   </div>
 </nav>
+
+<!-- Mobile bottom navigation -->
+<nav id="mobile-nav">
+  <div class="mobile-nav-inner">
+    <button class="mobile-nav-item active" data-page="home">
+      <span class="mobile-nav-icon">🏠</span>
+      <span>Home</span>
+    </button>
+    <button class="mobile-nav-item" data-page="practice">
+      <span class="mobile-nav-icon">✏️</span>
+      <span>Practice</span>
+    </button>
+    <button class="mobile-nav-item" data-page="browse">
+      <span class="mobile-nav-icon">📚</span>
+      <span>Browse</span>
+    </button>
+    <button class="mobile-nav-item" data-page="stats">
+      <span class="mobile-nav-icon">📊</span>
+      <span>Stats</span>
+    </button>
+    <button class="mobile-nav-item" id="mobile-more-btn">
+      <span class="mobile-nav-icon">☰</span>
+      <span>More</span>
+    </button>
+  </div>
+</nav>
+
+<!-- Mobile "More" slide-up menu -->
+<div id="mobile-overlay-backdrop"></div>
+<div id="mobile-more-menu">
+  <div class="mobile-menu-handle"></div>
+  <div class="mobile-menu-title">More</div>
+  <div class="mobile-menu-item" data-page="history">
+    <span class="menu-icon">🕘</span>
+    History
+  </div>
+  <div class="mobile-menu-item" data-page="settings">
+    <span class="menu-icon">⚙️</span>
+    Settings
+  </div>
+  <div class="mobile-menu-item" id="mobile-reset-btn" style="color: var(--wrong);">
+    <span class="menu-icon">🗑️</span>
+    Reset Data
+  </div>
+</div>
 
 <main id="main">
 
@@ -855,14 +1041,63 @@ function navigate(page) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
   document.querySelector(`.nav-item[data-page="${page}"]`)?.classList.add('active');
+  // Sync mobile nav
+  document.querySelectorAll('.mobile-nav-item[data-page]').forEach(n => n.classList.remove('active'));
+  document.querySelector(`.mobile-nav-item[data-page="${page}"]`)?.classList.add('active');
+  // Sync mobile more-menu items
+  document.querySelectorAll('.mobile-menu-item[data-page]').forEach(n => n.classList.remove('active'));
+  document.querySelector(`.mobile-menu-item[data-page="${page}"]`)?.classList.add('active');
   if (page === 'home') renderHome();
   if (page === 'stats') renderStats();
   if (page === 'history') renderHistory();
   if (page === 'browse') renderBrowse();
+  // Scroll to top of main on navigation
+  document.getElementById('main').scrollTo(0, 0);
+  window.scrollTo(0, 0);
 }
 
 document.querySelectorAll('.nav-item[data-page]').forEach(item => {
   item.addEventListener('click', () => navigate(item.dataset.page));
+});
+
+// Mobile bottom nav
+document.querySelectorAll('.mobile-nav-item[data-page]').forEach(item => {
+  item.addEventListener('click', () => navigate(item.dataset.page));
+});
+
+// Mobile more menu
+const moreBtn = document.getElementById('mobile-more-btn');
+const moreMenu = document.getElementById('mobile-more-menu');
+const moreBackdrop = document.getElementById('mobile-overlay-backdrop');
+
+function openMoreMenu() {
+  moreMenu.classList.add('visible');
+  moreBackdrop.style.display = 'block';
+  requestAnimationFrame(() => moreMenu.classList.add('open'));
+}
+function closeMoreMenu() {
+  moreMenu.classList.remove('open');
+  moreBackdrop.style.display = 'none';
+  setTimeout(() => moreMenu.classList.remove('visible'), 300);
+}
+
+moreBtn.addEventListener('click', openMoreMenu);
+moreBackdrop.addEventListener('click', closeMoreMenu);
+
+document.querySelectorAll('.mobile-menu-item[data-page]').forEach(item => {
+  item.addEventListener('click', () => {
+    navigate(item.dataset.page);
+    closeMoreMenu();
+  });
+});
+
+document.getElementById('mobile-reset-btn').addEventListener('click', () => {
+  closeMoreMenu();
+  if (confirm('Reset ALL data? This cannot be undone.')) {
+    localStorage.removeItem(LS.attempts);
+    alert('Progress reset.');
+    navigate('home');
+  }
 });
 
 // ============================================================
