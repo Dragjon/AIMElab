@@ -700,6 +700,17 @@ input:checked + .slider::before { transform: translateX(20px); }
   to { transform: rotate(360deg); }
 }
 
+
+/* ===== HISTORY TABLE COLUMN WIDTHS ===== */
+.history-table .col-id       { width: 80px; }
+.history-table th:nth-child(2) { width: 60px; }  /* Year */
+.history-table th:nth-child(3) { width: 55px; }  /* Part */
+.history-table th:nth-child(4) { width: 60px; }  /* Prob # */
+.history-table th:nth-child(5) { width: 80px; }  /* Your Ans */
+.history-table .col-correct-ans { width: 90px; } /* Correct Ans */
+.history-table th:nth-child(7) { width: 70px; }  /* Result */
+.history-table th:nth-child(8) { width: auto; }  /* Date — takes remaining space */
+
 </style>
 </head>
 <body>
