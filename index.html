@@ -1418,6 +1418,29 @@ async function showQuestion(problem) {
 }
 
 
+function getAoPSUrl(problem) {
+  const year = parseInt(problem.Year, 10);
+  const pn = problem.PN;
+  if (year < 2000) {
+    return `https://artofproblemsolving.com/wiki/index.php?title=${year}_AIME_Problems/Problem_${pn}`;
+  }
+  const part = problem.P ? `_${problem.P}` : '_I';
+  return `https://artofproblemsolving.com/wiki/index.php?title=${year}_AIME${part}_Problems/Problem_${pn}`;
+}
+
+function showSolutionLink(problem) {
+  document.getElementById('solution-link-btn')?.remove();
+  const a = document.createElement('a');
+  a.id = 'solution-link-btn';
+  a.href = getAoPSUrl(problem);
+  a.target = '_blank';
+  a.rel = 'noopener';
+  a.className = 'btn btn-secondary';
+  a.style.cssText = 'display:inline-flex;align-items:center;gap:6px;text-decoration:none;';
+  a.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42L17.59 5H14V3zM5 5h6v2H7v10h10v-4h2v6H5V5z"/></svg>Solution`;
+  document.getElementById('post-answer-area').querySelector('.flex-row').appendChild(a);
+}
+
 function submitAnswer() {
   const val = document.getElementById('answer-input').value.trim();
   if (val === '') { alert('Please enter an answer.'); return; }
@@ -1437,6 +1460,7 @@ function submitAnswer() {
   document.getElementById('submit-btn').disabled = true;
   document.getElementById('reveal-btn').style.display = 'none';
   document.getElementById('post-answer-area').style.display = 'block';
+  showSolutionLink(currentProblem);
 
   const settings = loadSettings();
   if (correct && settings.autoadvance) {
@@ -1457,6 +1481,7 @@ function revealAnswer() {
   document.getElementById('submit-btn').disabled = true;
   document.getElementById('reveal-btn').style.display = 'none';
   document.getElementById('post-answer-area').style.display = 'block';
+  showSolutionLink(currentProblem);
 }
 
 function nextQuestion() {
@@ -1563,6 +1588,9 @@ function showBrowseProblem(p) {
     ${p.P ? `<span class="badge">Part ${p.P}</span>` : ''}
     <span class="badge">Problem ${p.PN}</span>
     <span class="badge" style="font-family:var(--font-mono);font-size:11px;">${p.ID}</span>
+    <a href="${getAoPSUrl(p)}" target="_blank" rel="noopener" class="badge" style="background:var(--accent-glow);color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42L17.59 5H14V3zM5 5h6v2H7v10h10v-4h2v6H5V5z"/></svg>Solution
+    </a>
   `;
 
   // FIX: Run text parser to handle [asy] and layout formatting on browse page
