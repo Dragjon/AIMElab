@@ -547,9 +547,9 @@ input:checked + .slider::before { transform: translateX(20px); }
 #loading-overlay p { color: var(--text2); font-size: 14px; }
 
 /* ===== PROBLEM NUMBER GRID ===== */
-.prob-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.prob-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 8px; }
 .prob-btn {
-  width: 44px; height: 44px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  height: 44px; border-radius: var(--radius-sm); border: 1px solid var(--border);
   background: var(--bg3); color: var(--text2); font-weight: 700; font-size: 13px;
   cursor: pointer; transition: all var(--transition); display: flex; align-items: center; justify-content: center;
 }
