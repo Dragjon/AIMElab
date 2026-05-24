@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>AIMElab ~ Olympiad Practice</title>
+<title>AIMElab — Olympiad Practice</title>
 
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
@@ -663,13 +663,7 @@ input:checked + .slider::before { transform: translateX(20px); }
   #page-history .flex-between .btn { align-self: flex-end; }
   .result-banner { font-size: 0.88rem; padding: 12px 14px; gap: 8px; }
   .page, .card, .question-body { max-width: 100%; overflow-wrap: break-word; word-break: break-word; }
-  .col-id, .col-correct-ans {
-    width: 0 !important;
-    padding: 0 !important;
-    overflow: hidden;
-    white-space: nowrap;
-    border: none;
-  }
+  .col-id, .col-correct-ans { width: 0 !important; padding: 0 !important; overflow: hidden; white-space: nowrap; border: none; font-size: 0; }
   .chart-wrap { height: 200px; }
   .chart-wrap canvas { max-height: 200px; }
 }
@@ -683,6 +677,97 @@ input:checked + .slider::before { transform: translateX(20px); }
 .text-muted { color: var(--text3); font-size: 13px; }
 .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
+
+/* ===== TEST MODE ===== */
+.test-progress-grid {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.test-prog-dot {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg4);
+  transition: background 0.3s;
+}
+.test-prog-dot.answered-correct { background: var(--correct); }
+.test-prog-dot.answered-wrong { background: var(--wrong); }
+.test-prog-dot.current { background: var(--accent); }
+
+.test-question-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.test-q-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background var(--transition);
+  border-radius: 0;
+}
+.test-q-row:first-child { border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+.test-q-row:last-child { border-bottom: none; border-radius: 0 0 var(--radius-sm) var(--radius-sm); }
+.test-q-row:hover { background: var(--bg3); }
+.test-q-row.current-q { background: var(--accent-glow); }
+.test-q-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
+  background: var(--bg4); color: var(--text2);
+}
+.test-q-num.status-correct { background: rgba(52,211,153,0.2); color: var(--correct); }
+.test-q-num.status-wrong { background: rgba(248,113,113,0.2); color: var(--wrong); }
+.test-q-num.status-skipped { background: rgba(251,191,36,0.2); color: var(--warn); }
+.test-q-year { font-size: 12px; color: var(--text3); flex: 1; }
+.test-q-status-icon { flex-shrink: 0; }
+
+.test-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.test-res-cell {
+  height: 36px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+}
+.test-res-cell.correct { background: rgba(52,211,153,0.2); color: var(--correct); border: 1px solid var(--correct); }
+.test-res-cell.wrong { background: rgba(248,113,113,0.2); color: var(--wrong); border: 1px solid var(--wrong); }
+.test-res-cell.skipped { background: rgba(251,191,36,0.15); color: var(--warn); border: 1px solid var(--warn); }
+
+/* Test stats section on stats page */
+.test-history-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.test-history-row:last-child { border-bottom: none; }
+.test-score-badge {
+  font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700;
+  color: var(--accent); min-width: 48px;
+}
+.test-history-bar {
+  flex: 1; height: 6px; background: var(--bg4); border-radius: 3px; overflow: hidden;
+}
+.test-history-bar-fill {
+  height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  transition: width 0.4s;
+}
+.test-history-meta { font-size: 11px; color: var(--text3); min-width: 80px; text-align: right; }
+
+@media (max-width: 700px) {
+  .test-progress-grid { grid-template-columns: repeat(15, 1fr); gap: 3px; }
+  #test-active > div[style*="grid-template-columns:200px"] { grid-template-columns: 1fr !important; }
+  #test-question-nav { display: flex; flex-direction: row; flex-wrap: wrap; padding: 8px; gap: 6px; }
+  .test-q-row { flex: none; padding: 6px 10px; gap: 6px; border-bottom: none; border-radius: var(--radius-sm) !important; border: 1px solid var(--border); }
+  .test-q-year { display: none; }
+}
 
 .asy-loader {
   display: flex;
@@ -743,6 +828,10 @@ input:checked + .slider::before { transform: translateX(20px); }
       <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/></svg></span>
       <span>History</span>
     </div>
+    <div class="nav-item" data-page="tests">
+      <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+      <span>Tests</span>
+    </div>
     <div class="nav-item" data-page="settings">
       <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
       <span>Settings</span>
@@ -791,6 +880,9 @@ input:checked + .slider::before { transform: translateX(20px); }
   <div class="mobile-menu-title">More</div>
   <div class="mobile-menu-item" data-page="history">
     <span class="menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/></svg></span>History
+  </div>
+  <div class="mobile-menu-item" data-page="tests">
+    <span class="menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>Tests
   </div>
   <div class="mobile-menu-item" data-page="settings">
     <span class="menu-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings
@@ -983,6 +1075,112 @@ input:checked + .slider::before { transform: translateX(20px); }
         <div class="chart-wrap"><canvas id="chart-by-year"></canvas></div>
       </div>
     </div>
+
+    <div class="card" style="margin-top:20px;">
+      <div class="card-title">Test Performance</div>
+      <div class="stats-grid" id="test-stats-summary" style="margin-bottom:20px;"></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+        <div>
+          <div class="card-title" style="margin-bottom:10px;">Score Distribution</div>
+          <div class="chart-wrap"><canvas id="chart-test-scores"></canvas></div>
+        </div>
+        <div>
+          <div class="card-title" style="margin-bottom:10px;">Accuracy by Problem Position</div>
+          <div class="chart-wrap"><canvas id="chart-test-by-pos"></canvas></div>
+        </div>
+      </div>
+      <div class="card-title" style="margin-bottom:10px;">Recent Tests</div>
+      <div id="test-history-list"></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-tests">
+    <div class="page-header">
+      <div class="page-title">Mock Test</div>
+      <div class="page-subtitle">15 questions, one per problem number (1–15). Difficulty scales naturally.</div>
+    </div>
+
+    <!-- Config card -->
+    <div class="card" id="test-config">
+      <div class="card-title">Test Settings</div>
+      <div class="flex-row mt-2" style="margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0;">
+          <input type="checkbox" id="test-no-repeat" checked style="width:16px;height:16px;accent-color:var(--accent)"/>
+          <span style="font-size:13px; color:var(--text2);">Skip already-attempted problems</span>
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0;">
+          <input type="checkbox" id="test-part-i-only" style="width:16px;height:16px;accent-color:var(--accent)"/>
+          <span style="font-size:13px; color:var(--text2);">Part I only</span>
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0;">
+          <input type="checkbox" id="test-part-ii-only" style="width:16px;height:16px;accent-color:var(--accent)"/>
+          <span style="font-size:13px; color:var(--text2);">Part II only</span>
+        </label>
+      </div>
+      <p class="text-muted" style="margin-bottom:16px;">One question is randomly selected for each problem number 1 through 15. Questions may come from different years but difficulty is preserved by position.</p>
+      <button class="btn btn-primary btn-lg" id="start-test-btn">▶ Start Test</button>
+    </div>
+
+    <!-- Active test UI -->
+    <div id="test-active" style="display:none;">
+      <!-- Question navigator -->
+      <div class="card" style="padding:16px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <span style="font-size:12px; color:var(--text3); font-weight:600; text-transform:uppercase; letter-spacing:0.06em;">Question <span id="test-q-label">1</span> of 15</span>
+          <span style="font-size:12px; color:var(--text3);"><span id="test-answered-count">0</span> answered</span>
+        </div>
+        <div class="test-progress-grid" id="test-progress-dots"></div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:200px 1fr; gap:16px; align-items:start;">
+        <!-- Question list sidebar -->
+        <div class="card" style="padding:0; overflow:hidden;">
+          <div id="test-question-nav" class="test-question-list"></div>
+        </div>
+
+        <!-- Question display -->
+        <div class="card" id="test-question-card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+            <div class="question-meta" id="test-question-meta"></div>
+            <button class="btn btn-secondary btn-sm" id="test-submit-btn">Submit</button>
+          </div>
+
+          <div class="question-body" id="test-question-body"></div>
+
+          <div class="answer-area" style="margin-top:20px;">
+            <div class="form-group" style="margin:0;">
+              <label>Your Answer (000–999)</label>
+              <input type="number" id="test-answer-input" min="0" max="999" placeholder="e.g. 42"/>
+            </div>
+            <button class="btn btn-primary" id="test-submit-btn2">Submit</button>
+            <button class="btn btn-secondary" id="test-next-btn">Next →</button>
+          </div>
+
+          <div class="result-banner" id="test-result-banner"></div>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; margin-top:16px; gap:12px;">
+        <button class="btn btn-secondary" id="test-abandon-btn">Abandon Test</button>
+        <button class="btn btn-primary" id="test-finish-btn">Finish &amp; Score →</button>
+      </div>
+    </div>
+
+    <!-- Results card -->
+    <div class="card" id="test-results" style="display:none;">
+      <div class="page-header" style="margin-bottom:20px;">
+        <div class="page-title" id="test-score-title"></div>
+        <div class="page-subtitle" id="test-score-subtitle"></div>
+      </div>
+      <div class="stats-grid" id="test-result-stats" style="margin-bottom:20px;"></div>
+      <div class="card-title" style="margin-bottom:10px;">Per-Question Breakdown</div>
+      <div class="test-results-grid" id="test-results-grid"></div>
+      <div id="test-results-detail"></div>
+      <div class="flex-row mt-4">
+        <button class="btn btn-primary" id="test-again-btn">New Test</button>
+        <button class="btn btn-secondary" id="test-review-btn">Review Mistakes</button>
+      </div>
+    </div>
   </div>
 
   <div class="page" id="page-history">
@@ -1166,6 +1364,7 @@ let charts = {};
 const LS = {
   attempts: 'aimelab_attempts',   // { [id]: { correct: bool, answer: int, date: str, count: int }[] }
   settings: 'aimelab_settings',
+  tests: 'aimelab_tests',         // [ { date, score, total, results: [{pn, id, correct, userAnswer, correctAnswer}] } ]
 };
 
 function loadAttempts() {
@@ -1182,6 +1381,17 @@ function loadSettings() {
   try { return { ...defaults, ...JSON.parse(localStorage.getItem(LS.settings) || '{}') }; } catch { return defaults; }
 }
 function saveSettings(s) { localStorage.setItem(LS.settings, JSON.stringify(s)); }
+
+function loadTests() {
+  try { return JSON.parse(localStorage.getItem(LS.tests) || '[]'); } catch { return []; }
+}
+function saveTests(t) { localStorage.setItem(LS.tests, JSON.stringify(t)); }
+
+function recordTest(score, total, results) {
+  const t = loadTests();
+  t.push({ date: new Date().toISOString(), score, total, results });
+  saveTests(t);
+}
 
 function recordAttempt(id, correct, userAnswer, correctAnswer) {
   const a = loadAttempts();
@@ -1219,6 +1429,7 @@ function navigate(page) {
   if (page === 'stats') renderStats();
   if (page === 'history') renderHistory();
   if (page === 'browse') renderBrowse();
+  if (page === 'tests') renderTestsPage();
   window.scrollTo(0, 0);
 }
 
@@ -1241,7 +1452,7 @@ document.querySelectorAll('.mobile-menu-item[data-page]').forEach(item => {
 });
 document.getElementById('mobile-reset-btn').addEventListener('click', () => {
   closeMoreMenu();
-  if (confirm('Reset ALL data? This cannot be undone.')) { localStorage.removeItem(LS.attempts); alert('Progress reset.'); navigate('home'); }
+  if (confirm('Reset ALL data? This cannot be undone.')) { localStorage.removeItem(LS.attempts); localStorage.removeItem(LS.tests); alert('Progress reset.'); navigate('home'); }
 });
 
 // ============================================================
@@ -1837,6 +2048,7 @@ function renderStats() {
   renderByPartChart(filtered);
   renderByProbNumChart(filtered);
   renderByYearChart(filtered);
+  renderTestStatsSection();
 }
 
 function calcStreak(allAttempts) {
@@ -1953,6 +2165,78 @@ function renderByYearChart(filtered) {
     },
     options: chartOptions({ max: 100, unit: '%' })
   });
+}
+
+function renderTestStatsSection() {
+  const tests = loadTests();
+  const summaryEl = document.getElementById('test-stats-summary');
+  const listEl = document.getElementById('test-history-list');
+
+  if (!tests.length) {
+    summaryEl.innerHTML = `<div class="stat-card" style="grid-column:1/-1;"><div class="stat-value" style="font-size:1.2rem;color:var(--text3);">No tests taken yet</div><div class="stat-label">Complete a mock test to see your stats here</div></div>`;
+    listEl.innerHTML = '';
+    // Destroy test charts if they exist
+    ['test-scores','test-by-pos'].forEach(k => { if (charts[k]) { charts[k].destroy(); delete charts[k]; } });
+    return;
+  }
+
+  const avgScore = (tests.reduce((s, t) => s + t.score, 0) / tests.length).toFixed(1);
+  const bestScore = Math.max(...tests.map(t => t.score));
+  const recentScore = tests[tests.length - 1].score;
+  const avgPct = Math.round(parseFloat(avgScore) / 15 * 100);
+
+  summaryEl.innerHTML = `
+    <div class="stat-card"><div class="stat-value">${tests.length}</div><div class="stat-label">Tests Taken</div></div>
+    <div class="stat-card stat-correct"><div class="stat-value">${bestScore}/15</div><div class="stat-label">Best Score</div></div>
+    <div class="stat-card stat-accent2"><div class="stat-value">${avgScore}</div><div class="stat-label">Avg Score</div><div class="stat-sub">${avgPct}%</div></div>
+    <div class="stat-card"><div class="stat-value">${recentScore}/15</div><div class="stat-label">Last Test</div></div>
+  `;
+
+  // Score distribution chart
+  const scoreDistCtx = document.getElementById('chart-test-scores');
+  if (charts['test-scores']) charts['test-scores'].destroy();
+  const distBuckets = Array(16).fill(0);
+  tests.forEach(t => distBuckets[t.score]++);
+  charts['test-scores'] = new Chart(scoreDistCtx, {
+    type: 'bar',
+    data: {
+      labels: Array.from({length: 16}, (_, i) => i),
+      datasets: [{ label: 'Tests', data: distBuckets, backgroundColor: getAccentColor(0.75), borderRadius: 4 }]
+    },
+    options: { ...chartOptions({}), plugins: { legend: { display: false } } }
+  });
+
+  // Accuracy by position chart (across all tests)
+  const byPosCtx = document.getElementById('chart-test-by-pos');
+  if (charts['test-by-pos']) charts['test-by-pos'].destroy();
+  const posTotals = Array(15).fill(0);
+  const posCorrect = Array(15).fill(0);
+  tests.forEach(t => {
+    (t.results || []).forEach((r, i) => {
+      posTotals[i]++;
+      if (r.correct) posCorrect[i]++;
+    });
+  });
+  charts['test-by-pos'] = new Chart(byPosCtx, {
+    type: 'bar',
+    data: {
+      labels: Array.from({length: 15}, (_, i) => i + 1),
+      datasets: [{ label: 'Accuracy %', data: posTotals.map((t, i) => t ? Math.round(posCorrect[i] / t * 100) : 0), backgroundColor: Array.from({length:15}, (_, i) => `hsl(${140 - i * 8}, 65%, 55%)`), borderRadius: 4 }]
+    },
+    options: chartOptions({ max: 100, unit: '%' })
+  });
+
+  // Recent tests list (last 10)
+  const recent = [...tests].reverse().slice(0, 10);
+  listEl.innerHTML = recent.map(t => {
+    const pct = Math.round(t.score / t.total * 100);
+    const d = new Date(t.date).toLocaleDateString();
+    return `<div class="test-history-row">
+      <div class="test-score-badge">${t.score}/${t.total}</div>
+      <div class="test-history-bar"><div class="test-history-bar-fill" style="width:${pct}%"></div></div>
+      <div class="test-history-meta">${pct}% · ${d}</div>
+    </div>`;
+  }).join('');
 }
 
 document.getElementById('stats-time-filter').addEventListener('click', e => {
@@ -2099,15 +2383,16 @@ document.querySelectorAll('.font-size-btn').forEach(btn => {
 });
 
 document.getElementById('export-data-btn').addEventListener('click', () => {
-  const data = { attempts: loadAttempts(), settings: loadSettings() };
+  const data = { attempts: loadAttempts(), settings: loadSettings(), tests: loadTests() };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob); const a = document.createElement('a');
   a.href = url; a.download = 'aimelab_data.json'; a.click();
 });
 
 document.getElementById('clear-data-btn').addEventListener('click', () => {
-  if (confirm('This will permanently delete all your attempt history. Are you sure?')) {
+  if (confirm('This will permanently delete all your attempt history and test records. Are you sure?')) {
     localStorage.removeItem(LS.attempts);
+    localStorage.removeItem(LS.tests);
     alert('Data cleared.');
   }
 });
@@ -2115,9 +2400,311 @@ document.getElementById('clear-data-btn').addEventListener('click', () => {
 document.getElementById('reset-progress-btn').addEventListener('click', () => {
   if (confirm('Reset ALL data? This cannot be undone.')) {
     localStorage.removeItem(LS.attempts);
+    localStorage.removeItem(LS.tests);
     alert('Progress reset.');
     navigate('home');
   }
+});
+
+// ============================================================
+// TESTS PAGE
+// ============================================================
+let testQuestions = [];       // array of 15 problems (index = pn-1)
+let testAnswers = [];         // array of 15: null | { userAnswer, correct, correctAnswer, revealed }
+let testCurrentIdx = 0;       // which question is being shown (0–14)
+let testActive = false;
+
+function renderTestsPage() {
+  // show config, hide active/results
+  document.getElementById('test-config').style.display = '';
+  document.getElementById('test-active').style.display = 'none';
+  document.getElementById('test-results').style.display = 'none';
+}
+
+function buildTestQuestions() {
+  const noRepeat = document.getElementById('test-no-repeat').checked;
+  const partIOnly = document.getElementById('test-part-i-only').checked;
+  const partIIOnly = document.getElementById('test-part-ii-only').checked;
+  const attempts = loadAttempts();
+
+  const questions = [];
+  for (let pn = 1; pn <= 15; pn++) {
+    let pool = problems.filter(p => parseInt(p.PN, 10) === pn);
+
+    // Part filter
+    if (partIOnly) pool = pool.filter(p => p.P === 'I' || p.P === '');
+    if (partIIOnly) pool = pool.filter(p => p.P === 'II');
+
+    // noRepeat: exclude problems already attempted (correctly or not)
+    if (noRepeat) {
+      const noRepeatPool = pool.filter(p => !attempts[p.ID] || attempts[p.ID].length === 0);
+      // fall back to full pool for this position if exhausted
+      pool = noRepeatPool.length ? noRepeatPool : pool;
+    }
+
+    if (!pool.length) return null; // can't build test
+
+    // Pick a random one
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    questions.push(pick);
+  }
+  return questions;
+}
+
+function startTest() {
+  const qs = buildTestQuestions();
+  if (!qs) {
+    alert('Not enough problems to build a test. Try unchecking "Skip already-attempted".');
+    return;
+  }
+  testQuestions = qs;
+  testAnswers = Array(15).fill(null);
+  testCurrentIdx = 0;
+  testActive = true;
+
+  document.getElementById('test-config').style.display = 'none';
+  document.getElementById('test-results').style.display = 'none';
+  document.getElementById('test-active').style.display = '';
+
+  renderTestNav();
+  showTestQuestion(0);
+}
+
+function renderTestNav() {
+  // Progress dots
+  const dotsEl = document.getElementById('test-progress-dots');
+  dotsEl.innerHTML = '';
+  testAnswers.forEach((ans, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'test-prog-dot';
+    if (i === testCurrentIdx) dot.classList.add('current');
+    else if (ans !== null) dot.classList.add(ans.correct ? 'answered-correct' : 'answered-wrong');
+    dotsEl.appendChild(dot);
+  });
+
+  // Sidebar nav
+  const nav = document.getElementById('test-question-nav');
+  nav.innerHTML = '';
+  testAnswers.forEach((ans, i) => {
+    const row = document.createElement('div');
+    row.className = 'test-q-row' + (i === testCurrentIdx ? ' current-q' : '');
+    row.innerHTML = `
+      <div class="test-q-num ${ans === null ? '' : ans.correct ? 'status-correct' : 'status-wrong'}">${i + 1}</div>
+      <span class="test-q-year">${testQuestions[i].Year}</span>
+      <span class="test-q-status-icon">
+        ${ans === null
+          ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>'
+          : ans.correct
+            ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--correct)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+            : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--wrong)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+        }
+      </span>`;
+    row.addEventListener('click', () => navigateTestQuestion(i));
+    nav.appendChild(row);
+  });
+
+  // Answered count
+  const answeredCount = testAnswers.filter(a => a !== null).length;
+  document.getElementById('test-answered-count').textContent = answeredCount;
+  document.getElementById('test-q-label').textContent = testCurrentIdx + 1;
+}
+
+async function showTestQuestion(idx) {
+  testCurrentIdx = idx;
+  const problem = testQuestions[idx];
+  const ans = testAnswers[idx];
+  const settings = loadSettings();
+
+  const meta = document.getElementById('test-question-meta');
+  let metaHTML = `<span class="badge badge-accent">${problem.Year}</span>`;
+  if (problem.P) metaHTML += `<span class="badge">Part ${problem.P}</span>`;
+  metaHTML += `<span class="badge">Problem ${problem.PN}</span>`;
+  if (settings.showid)
+    metaHTML += `<span class="badge" style="opacity:0.6;font-family:var(--font-mono);font-size:11px;">${problem.ID}</span>`;
+  meta.innerHTML = metaHTML;
+
+  const html = await renderProblemText(problem.Q);
+  document.getElementById('test-question-body').innerHTML = html;
+  requestAnimationFrame(() => typeset('#test-question-body'));
+
+  // Restore answer state if already answered
+  const input = document.getElementById('test-answer-input');
+  const banner = document.getElementById('test-result-banner');
+
+  if (ans !== null) {
+    input.value = ans.userAnswer ?? '';
+    input.disabled = true;
+    document.getElementById('test-submit-btn').disabled = true;
+    document.getElementById('test-submit-btn2').disabled = true;
+    banner.className = 'result-banner show ' + (ans.correct ? 'correct' : 'wrong');
+    banner.innerHTML = ans.correct
+      ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg> Correct! The answer is <strong>${ans.correctAnswer}</strong>.`
+      : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span>Incorrect.</span><span>Your answer: <strong>${ans.userAnswer}</strong></span><span>Correct: <strong>${ans.correctAnswer}</strong></span>`;
+  } else {
+    input.value = '';
+    input.disabled = false;
+    document.getElementById('test-submit-btn').disabled = false;
+    document.getElementById('test-submit-btn2').disabled = false;
+    banner.className = 'result-banner';
+    banner.innerHTML = '';
+  }
+
+  renderTestNav();
+}
+
+function navigateTestQuestion(idx) {
+  showTestQuestion(idx);
+}
+
+function submitTestAnswer() {
+  const idx = testCurrentIdx;
+  if (testAnswers[idx] !== null) return; // already answered
+
+  const val = document.getElementById('test-answer-input').value.trim();
+  if (val === '') { alert('Please enter an answer.'); return; }
+
+  const problem = testQuestions[idx];
+  const userAnswer = parseInt(val, 10);
+  const correctAnswer = parseInt(problem.A, 10);
+  const correct = userAnswer === correctAnswer;
+
+  testAnswers[idx] = { userAnswer, correctAnswer, correct };
+
+  // Record as a regular attempt too
+  recordAttempt(problem.ID, correct, userAnswer, correctAnswer);
+
+  const banner = document.getElementById('test-result-banner');
+  banner.className = 'result-banner show ' + (correct ? 'correct' : 'wrong');
+  banner.innerHTML = correct
+    ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg> Correct! The answer is <strong>${correctAnswer}</strong>.`
+    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span>Incorrect.</span><span>Your answer: <strong>${userAnswer}</strong></span><span>Correct: <strong>${correctAnswer}</strong></span>`;
+
+  document.getElementById('test-answer-input').disabled = true;
+  document.getElementById('test-submit-btn').disabled = true;
+  document.getElementById('test-submit-btn2').disabled = true;
+
+  renderTestNav();
+
+  // Auto-advance to next unanswered
+  const nextUnanswered = testAnswers.findIndex((a, i) => i > idx && a === null);
+  if (nextUnanswered !== -1) {
+    setTimeout(() => showTestQuestion(nextUnanswered), 800);
+  }
+}
+
+function finishTest() {
+  const unanswered = testAnswers.filter(a => a === null).length;
+  if (unanswered > 0) {
+    if (!confirm(`You have ${unanswered} unanswered question${unanswered > 1 ? 's' : ''}. Finish anyway? Unanswered questions will count as wrong.`)) return;
+    // Fill unanswered as wrong with null answer
+    testAnswers = testAnswers.map((a, i) => a !== null ? a : {
+      userAnswer: null, correctAnswer: parseInt(testQuestions[i].A, 10), correct: false
+    });
+  }
+
+  const score = testAnswers.filter(a => a.correct).length;
+  const results = testAnswers.map((a, i) => ({
+    pn: i + 1,
+    id: testQuestions[i].ID,
+    year: testQuestions[i].Year,
+    part: testQuestions[i].P,
+    correct: a.correct,
+    userAnswer: a.userAnswer,
+    correctAnswer: a.correctAnswer
+  }));
+
+  recordTest(score, 15, results);
+  testActive = false;
+
+  showTestResults(score, results);
+}
+
+function showTestResults(score, results) {
+  document.getElementById('test-active').style.display = 'none';
+  document.getElementById('test-results').style.display = '';
+
+  const pct = Math.round(score / 15 * 100);
+  document.getElementById('test-score-title').textContent = `${score} / 15`;
+  document.getElementById('test-score-subtitle').textContent =
+    pct >= 80 ? '🏆 Excellent work!' :
+    pct >= 60 ? '👍 Good effort — keep practicing!' :
+    pct >= 40 ? '📚 Keep at it — review the mistakes below.' :
+    '💪 Every attempt counts. Review and retry!';
+
+  document.getElementById('test-result-stats').innerHTML = `
+    <div class="stat-card stat-correct"><div class="stat-value">${score}</div><div class="stat-label">Correct</div></div>
+    <div class="stat-card stat-wrong"><div class="stat-value">${15 - score}</div><div class="stat-label">Wrong</div></div>
+    <div class="stat-card stat-accent2"><div class="stat-value">${pct}%</div><div class="stat-label">Score</div></div>
+  `;
+
+  // Result grid cells
+  const grid = document.getElementById('test-results-grid');
+  grid.innerHTML = results.map(r =>
+    `<div class="test-res-cell ${r.correct ? 'correct' : r.userAnswer === null ? 'skipped' : 'wrong'}" title="Q${r.pn}: ${r.correct ? 'Correct' : r.userAnswer === null ? 'Skipped' : 'Wrong (got ' + r.userAnswer + ', ans ' + r.correctAnswer + ')'}">
+      ${r.pn}
+    </div>`
+  ).join('');
+
+  // Detailed breakdown
+  const detail = document.getElementById('test-results-detail');
+  const wrongOnes = results.filter(r => !r.correct);
+  if (!wrongOnes.length) {
+    detail.innerHTML = `<p class="text-muted" style="margin-top:12px;">Perfect score! 🎉</p>`;
+  } else {
+    detail.innerHTML = `<div class="card-title" style="margin-top:16px; margin-bottom:8px;">Missed Questions</div>` +
+      wrongOnes.map(r => `
+        <div style="display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--border);">
+          <span class="badge" style="flex-shrink:0;">Q${r.pn}</span>
+          <span style="font-size:12px; color:var(--text2); flex:1;">${r.year}${r.part ? ' Part ' + r.part : ''}</span>
+          <span style="font-size:12px; color:var(--text3);">Your: <strong style="color:var(--wrong);">${r.userAnswer ?? '—'}</strong></span>
+          <span style="font-size:12px; color:var(--text3);">Ans: <strong style="color:var(--correct);">${r.correctAnswer}</strong></span>
+          <a href="${getAoPSUrl(testQuestions[r.pn - 1])}" target="_blank" rel="noopener" class="badge" style="background:var(--accent-glow);color:var(--accent);text-decoration:none;">
+            Solution ↗
+          </a>
+        </div>`
+      ).join('');
+  }
+}
+
+function abandonTest() {
+  if (!confirm('Abandon this test? Progress will be lost.')) return;
+  testActive = false;
+  testQuestions = [];
+  testAnswers = [];
+  renderTestsPage();
+}
+
+document.getElementById('start-test-btn').addEventListener('click', startTest);
+document.getElementById('test-submit-btn').addEventListener('click', submitTestAnswer);
+document.getElementById('test-submit-btn2').addEventListener('click', submitTestAnswer);
+document.getElementById('test-next-btn').addEventListener('click', () => {
+  const nextIdx = testAnswers.findIndex((a, i) => i > testCurrentIdx && a === null);
+  const idx = nextIdx !== -1 ? nextIdx : (testCurrentIdx + 1 < 15 ? testCurrentIdx + 1 : testCurrentIdx);
+  showTestQuestion(idx);
+});
+document.getElementById('test-finish-btn').addEventListener('click', finishTest);
+document.getElementById('test-abandon-btn').addEventListener('click', abandonTest);
+document.getElementById('test-again-btn').addEventListener('click', () => { renderTestsPage(); });
+document.getElementById('test-review-btn').addEventListener('click', () => {
+  // Load wrong answers into practice session queue
+  const wrongProblems = testAnswers.map((a, i) => (!a.correct ? testQuestions[i] : null)).filter(Boolean);
+  if (!wrongProblems.length) { alert('No mistakes to review!'); return; }
+  navigate('practice');
+  sessionQueue = wrongProblems;
+  sessionIndex = 0;
+  document.getElementById('practice-config').style.display = 'none';
+  document.getElementById('question-card').classList.add('active');
+  showQuestion(wrongProblems[0]);
+});
+document.getElementById('test-answer-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitTestAnswer();
+});
+// Part filter mutual exclusion
+document.getElementById('test-part-i-only').addEventListener('change', function() {
+  if (this.checked) document.getElementById('test-part-ii-only').checked = false;
+});
+document.getElementById('test-part-ii-only').addEventListener('change', function() {
+  if (this.checked) document.getElementById('test-part-i-only').checked = false;
 });
 
 // ============================================================
