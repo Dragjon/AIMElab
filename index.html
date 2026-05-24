@@ -1147,13 +1147,13 @@ input:checked + .slider::before { transform: translateX(20px); }
 
           <div class="question-body" id="test-question-body"></div>
 
-          <div class="answer-area" style="margin-top:20px;">
+          <div class="answer-area" style="margin-top:20px; align-items:flex-end;">
             <div class="form-group" style="margin:0;">
               <label>Your Answer (000–999)</label>
-              <input type="number" id="test-answer-input" min="0" max="999" placeholder="e.g. 42"/>
+              <input type="number" id="test-answer-input" min="0" max="999" placeholder="e.g. 42" style="height:50px; font-size:1.2rem; font-family:var(--font-mono); text-align:center;"/>
             </div>
-            <button class="btn btn-primary" id="test-submit-btn2">Submit</button>
-            <button class="btn btn-secondary" id="test-next-btn">Next →</button>
+            <button class="btn btn-primary" id="test-submit-btn2" style="height:50px;">Submit</button>
+            <button class="btn btn-secondary" id="test-next-btn" style="height:50px;">Next →</button>
           </div>
 
           <div class="result-banner" id="test-result-banner"></div>
