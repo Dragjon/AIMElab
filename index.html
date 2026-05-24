@@ -663,7 +663,13 @@ input:checked + .slider::before { transform: translateX(20px); }
   #page-history .flex-between .btn { align-self: flex-end; }
   .result-banner { font-size: 0.88rem; padding: 12px 14px; gap: 8px; }
   .page, .card, .question-body { max-width: 100%; overflow-wrap: break-word; word-break: break-word; }
-  .col-id, .col-correct-ans { display: none; }
+  .col-id, .col-correct-ans {
+    width: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+    white-space: nowrap;
+    border: none;
+  }
   .chart-wrap { height: 200px; }
   .chart-wrap canvas { max-height: 200px; }
 }
@@ -699,17 +705,6 @@ input:checked + .slider::before { transform: translateX(20px); }
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
-
-
-/* ===== HISTORY TABLE COLUMN WIDTHS ===== */
-.history-table .col-id       { width: 80px; }
-.history-table th:nth-child(2) { width: 60px; }  /* Year */
-.history-table th:nth-child(3) { width: 55px; }  /* Part */
-.history-table th:nth-child(4) { width: 60px; }  /* Prob # */
-.history-table th:nth-child(5) { width: 80px; }  /* Your Ans */
-.history-table .col-correct-ans { width: 90px; } /* Correct Ans */
-.history-table th:nth-child(7) { width: 70px; }  /* Result */
-.history-table th:nth-child(8) { width: auto; }  /* Date — takes remaining space */
 
 </style>
 </head>
