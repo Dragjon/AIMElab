@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>AIMElab ~ Olympiad Practice</title>
+<title>AIMElab — Olympiad Practice</title>
 
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
@@ -392,6 +392,7 @@ label { font-size: 13px; color: var(--text2); font-weight: 500; display: block; 
 .result-banner {
   display: none; padding: 16px 20px; border-radius: var(--radius-sm);
   font-weight: 600; font-size: 1rem; margin-top: 16px; align-items: center; gap: 12px;
+  flex-wrap: wrap; word-break: break-word;
 }
 .result-banner.show { display: flex; animation: slideIn 0.3s ease; }
 .result-banner.correct { background: rgba(52,211,153,0.12); border: 1px solid var(--correct); color: var(--correct); }
@@ -635,6 +636,7 @@ input:checked + .slider::before { transform: translateX(20px); }
   #page-home .card .flex-row .btn { width: 100%; justify-content: center; }
   #page-history .flex-between { flex-direction: column; align-items: flex-start; gap: 10px; }
   #page-history .flex-between .btn { align-self: flex-end; }
+  .result-banner { font-size: 0.88rem; padding: 12px 14px; gap: 8px; }
   .page, .card, .question-body { max-width: 100%; overflow-wrap: break-word; word-break: break-word; }
   .chart-wrap { height: 200px; }
   .chart-wrap canvas { max-height: 200px; }
@@ -1454,7 +1456,7 @@ function submitAnswer() {
   banner.className = 'result-banner show ' + (correct ? 'correct' : 'wrong');
   banner.innerHTML = correct
     ? `✅ Correct! The answer is <strong>${correctAns}</strong>.`
-    : `❌ Incorrect. Your answer: <strong>${userAns}</strong> — Correct: <strong>${correctAns}</strong>`;
+    : `<span style="white-space:nowrap">❌ Incorrect.</span><span style="white-space:nowrap">Your answer: <strong>${userAns}</strong></span><span style="white-space:nowrap">Correct: <strong>${correctAns}</strong></span>`;
 
   document.getElementById('answer-input').disabled = true;
   document.getElementById('submit-btn').disabled = true;
