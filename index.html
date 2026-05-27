@@ -2968,7 +2968,13 @@ async function init() {
         Comp: comp,
         PN: pn,
         Q: r.problem,
-        A: r.answer != null ? String(r.answer) : '',
+        A: (() => {
+          if (r.answer == null) return '';
+          const s = String(r.answer).trim();
+          // Strip leading zeros: "041" → "41", "007" → "7". Preserves decimals and non-numeric.
+          const n = Number(s);
+          return (s !== '' && !isNaN(n) && isFinite(n)) ? String(n) : s;
+        })(),
         Letter: r.letter || '',
         IsAIME: isAIME,
         Link: r.link || ''
