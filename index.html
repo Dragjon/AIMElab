@@ -532,6 +532,9 @@ input:checked + .slider::before { transform: translateX(20px); }
 .history-table .delete-attempt-btn { opacity: 0; background: none; border: none; cursor: pointer; color: var(--wrong); padding: 2px 5px; border-radius: 4px; line-height: 1; transition: opacity 0.15s, background 0.15s; }
 .history-table tr:hover .delete-attempt-btn { opacity: 1; }
 .history-table .delete-attempt-btn:hover { background: rgba(248,113,113,0.15); }
+.history-table .open-problem-btn { opacity: 0; background: none; border: none; cursor: pointer; color: var(--accent); padding: 2px 5px; border-radius: 4px; line-height: 1; transition: opacity 0.15s, background 0.15s; }
+.history-table tr:hover .open-problem-btn { opacity: 1; }
+.history-table .open-problem-btn:hover { background: var(--accent-glow); }
 
 /* Cell tap tooltip */
 #cell-tooltip {
@@ -1249,6 +1252,7 @@ input:checked + .slider::before { transform: translateX(20px); }
               <th class="col-correct-ans">Correct Ans</th>
               <th>Result</th>
               <th>Date</th>
+              <th style="width:32px;"></th>
               <th style="width:32px;"></th>
             </tr>
           </thead>
@@ -2372,7 +2376,7 @@ function renderHistory() {
 
   const tbody = document.getElementById('history-tbody');
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:40px; color:var(--text3);">No attempts yet. Start practicing!</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:40px; color:var(--text3);">No attempts yet. Start practicing!</td></tr>`;
     return;
   }
 
@@ -2387,6 +2391,11 @@ function renderHistory() {
       <td class="col-correct-ans" style="font-family:var(--font-mono); color:var(--accent);">${r.correctAnswer ?? prob?.A ?? '—'}</td>
       <td><span class="pill ${r.correct ? 'pill-correct' : 'pill-wrong'}">${r.correct ? '✓' : '✗'}</span></td>
       <td style="font-size:11px;">${r.date ? new Date(r.date).toLocaleDateString() : '—'}</td>
+      <td style="text-align:center; padding:4px;">
+        ${prob ? `<button class="open-problem-btn" data-id="${r.id}" title="Open problem">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </button>` : ''}
+      </td>
       <td style="text-align:center; padding:4px;">
         <button class="delete-attempt-btn" data-id="${r.id}" data-date="${r.date}" title="Delete this attempt">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
@@ -2407,6 +2416,18 @@ function deleteAttempt(problemId, date) {
 
 // Delete attempt button handler (delegated)
 document.getElementById('history-tbody').addEventListener('click', e => {
+  const openBtn = e.target.closest('.open-problem-btn');
+  if (openBtn) {
+    const prob = problems.find(p => p.ID === openBtn.dataset.id);
+    if (!prob) return;
+    navigate('practice');
+    sessionQueue = [prob];
+    sessionIndex = 0;
+    document.getElementById('practice-config').style.display = 'none';
+    document.getElementById('question-card').classList.add('active');
+    showQuestion(prob);
+    return;
+  }
   const btn = e.target.closest('.delete-attempt-btn');
   if (!btn) return;
   const id = btn.dataset.id;
