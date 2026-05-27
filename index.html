@@ -529,6 +529,9 @@ input:checked + .slider::before { transform: translateX(20px); }
 .history-table td { padding: 9px 8px; border-bottom: 1px solid var(--border); color: var(--text2); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: default; }
 .history-table td:first-child { font-family: var(--font-mono); color: var(--accent); font-size: 11px; }
 .history-table tr:hover td { background: var(--bg3); }
+.history-table .delete-attempt-btn { opacity: 0; background: none; border: none; cursor: pointer; color: var(--wrong); padding: 2px 5px; border-radius: 4px; line-height: 1; transition: opacity 0.15s, background 0.15s; }
+.history-table tr:hover .delete-attempt-btn { opacity: 1; }
+.history-table .delete-attempt-btn:hover { background: rgba(248,113,113,0.15); }
 
 /* Cell tap tooltip */
 #cell-tooltip {
@@ -1246,6 +1249,7 @@ input:checked + .slider::before { transform: translateX(20px); }
               <th class="col-correct-ans">Correct Ans</th>
               <th>Result</th>
               <th>Date</th>
+              <th style="width:32px;"></th>
             </tr>
           </thead>
           <tbody id="history-tbody"></tbody>
@@ -2369,11 +2373,11 @@ function renderHistory() {
 
   const tbody = document.getElementById('history-tbody');
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px; color:var(--text3);">No attempts yet. Start practicing!</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:40px; color:var(--text3);">No attempts yet. Start practicing!</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = filtered.slice(0, 200).map(r => {
+  tbody.innerHTML = filtered.slice(0, 200).map((r, i) => {
     const prob = problems.find(p => p.ID === r.id);
     return `<tr>
       <td class="col-id">${r.id}</td>
@@ -2384,9 +2388,32 @@ function renderHistory() {
       <td class="col-correct-ans" style="font-family:var(--font-mono); color:var(--accent);">${r.correctAnswer ?? prob?.A ?? '—'}</td>
       <td><span class="pill ${r.correct ? 'pill-correct' : 'pill-wrong'}">${r.correct ? '✓' : '✗'}</span></td>
       <td style="font-size:11px;">${r.date ? new Date(r.date).toLocaleDateString() : '—'}</td>
+      <td style="text-align:center; padding:4px;">
+        <button class="delete-attempt-btn" data-id="${r.id}" data-date="${r.date}" title="Delete this attempt">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </td>
     </tr>`;
   }).join('');
 }
+
+function deleteAttempt(problemId, date) {
+  const attempts = loadAttempts();
+  if (!attempts[problemId]) return;
+  attempts[problemId] = attempts[problemId].filter(a => a.date !== date);
+  if (attempts[problemId].length === 0) delete attempts[problemId];
+  localStorage.setItem(LS.attempts, JSON.stringify(attempts));
+  renderHistory();
+}
+
+// Delete attempt button handler (delegated)
+document.getElementById('history-tbody').addEventListener('click', e => {
+  const btn = e.target.closest('.delete-attempt-btn');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  const date = btn.dataset.date;
+  deleteAttempt(id, date);
+});
 
 document.getElementById('hist-comp').addEventListener('change', renderHistory);
 document.getElementById('hist-year').addEventListener('change', renderHistory);
@@ -2900,12 +2927,9 @@ async function init() {
 
     problems = deduped.map(r => {
       // Extract year and competition from link
-      // Ordered from most-specific to least-specific so e.g. AIME_II matches before AIME
-      const linkMatch = r.link && r.link.match(
-        /(\d{4})_(Fall_AMC_12[AB]|Fall_AMC_10[AB]|AMC_12[ABP]?|AMC_10[AB]?|AMC_8|AIME_II|AIME_I|AIME|AJHSME|AHSME|USAJMO|USAMO|USOJMO|USOMO)_Problems/
-      );
+      const linkMatch = r.link && r.link.match(/(\d{4})_(AMC_8|AMC_10[AB]?|AMC_12[AB]?|AIME_II|AIME_I|AIME)_Problems/);
       const year = linkMatch ? linkMatch[1] : '';
-      const comp = linkMatch ? linkMatch[2].replace(/_/g, ' ') : '';
+      const comp = linkMatch ? linkMatch[2].replace(/_/g, ' ') : 'AIME';
       // Determine if AIME-type (integer answer) or AMC-type (letter answer)
       const isAIME = comp.startsWith('AIME');
       // Problem number from link
@@ -2935,13 +2959,7 @@ async function init() {
 
   // Populate competition dropdowns
   const comps = [...new Set(problems.map(p => p.Comp))].filter(Boolean).sort();
-  const compOrder = [
-    'AIME', 'AIME I', 'AIME II',
-    'AMC 8', 'AMC 10', 'AMC 10A', 'AMC 10B', 'AMC 12', 'AMC 12A', 'AMC 12B', 'AMC 12P',
-    'AJHSME', 'AHSME',
-    'Fall AMC 10A', 'Fall AMC 10B', 'Fall AMC 12A', 'Fall AMC 12B',
-    'USAJMO', 'USAMO', 'USOJMO', 'USOMO'
-  ];
+  const compOrder = ['AIME', 'AIME I', 'AIME II', 'AMC 8', 'AMC 10', 'AMC 10A', 'AMC 10B', 'AMC 12', 'AMC 12A', 'AMC 12B'];
   const sortedComps = [...compOrder.filter(c => comps.includes(c)), ...comps.filter(c => !compOrder.includes(c))];
 
   // Practice competition filter
