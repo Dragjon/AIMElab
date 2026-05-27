@@ -797,7 +797,7 @@ input:checked + .slider::before { transform: translateX(20px); }
 
 <div id="loading-overlay">
   <div class="loader"></div>
-  <p>Loading AIME dataset…</p>
+  <p>Loading dataset…</p>
 </div>
 
 <div id="app">
@@ -937,17 +937,15 @@ input:checked + .slider::before { transform: translateX(20px); }
       <div class="card-title">Session Settings</div>
       <div class="filter-row">
         <div class="form-group">
-          <label>Year</label>
-          <select id="filter-year">
-            <option value="all">All Years</option>
+          <label>Competition</label>
+          <select id="filter-comp">
+            <option value="all">All</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Part</label>
-          <select id="filter-part">
-            <option value="all">All</option>
-            <option value="I">Part I</option>
-            <option value="II">Part II</option>
+          <label>Year</label>
+          <select id="filter-year">
+            <option value="all">All Years</option>
           </select>
         </div>
         <div class="form-group">
@@ -985,8 +983,8 @@ input:checked + .slider::before { transform: translateX(20px); }
 
       <div class="answer-area">
         <div class="form-group" style="margin:0;">
-          <label>Your Answer (integer 000–999)</label>
-          <input type="number" id="answer-input" min="0" max="999" placeholder="e.g. 42"/>
+          <label id="answer-input-label">Your Answer</label>
+          <input type="text" id="answer-input" placeholder="e.g. 42"/>
         </div>
         <button class="btn btn-primary" id="submit-btn">Submit</button>
         <button class="btn btn-secondary" id="reveal-btn">Reveal</button>
@@ -1011,16 +1009,18 @@ input:checked + .slider::before { transform: translateX(20px); }
     <div class="card">
       <div class="filter-row">
         <div class="form-group">
+          <label>Competition</label>
+          <select id="browse-comp"></select>
+        </div>
+        <div class="form-group">
           <label>Year</label>
           <select id="browse-year"></select>
         </div>
         <div class="form-group">
-          <label>Part</label>
-          <select id="browse-part">
-            <option value="all">All</option>
-            <option value="">Classic (pre-2000)</option>
-            <option value="I">Part I</option>
-            <option value="II">Part II</option>
+          <label>Sort By</label>
+          <select id="browse-sort">
+            <option value="num">Problem #</option>
+            <option value="status">Status</option>
           </select>
         </div>
       </div>
@@ -1060,7 +1060,7 @@ input:checked + .slider::before { transform: translateX(20px); }
         <div class="chart-wrap"><canvas id="chart-timeline"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title">Accuracy by Part</div>
+        <div class="card-title">Accuracy by Competition</div>
         <div class="chart-wrap"><canvas id="chart-by-part"></canvas></div>
       </div>
     </div>
@@ -1097,27 +1097,33 @@ input:checked + .slider::before { transform: translateX(20px); }
   <div class="page" id="page-tests">
     <div class="page-header">
       <div class="page-title">Mock Test</div>
-      <div class="page-subtitle">15 questions, one per problem number (1–15). Difficulty scales naturally.</div>
+      <div class="page-subtitle">One question per problem number, difficulty preserved by position. Works for AIME and AMC competitions.</div>
     </div>
 
     <!-- Config card -->
     <div class="card" id="test-config">
       <div class="card-title">Test Settings</div>
+      <div class="filter-row" style="margin-bottom:16px;">
+        <div class="form-group">
+          <label>Competition</label>
+          <select id="test-comp">
+            <option value="AIME">AIME (all)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Year</label>
+          <select id="test-year">
+            <option value="all">All Years</option>
+          </select>
+        </div>
+      </div>
       <div class="flex-row mt-2" style="margin-bottom:20px; flex-wrap:wrap; gap:16px;">
         <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0;">
           <input type="checkbox" id="test-no-repeat" checked style="width:16px;height:16px;accent-color:var(--accent)"/>
           <span style="font-size:13px; color:var(--text2);">Skip already-attempted problems</span>
         </label>
-        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0;">
-          <input type="checkbox" id="test-part-i-only" style="width:16px;height:16px;accent-color:var(--accent)"/>
-          <span style="font-size:13px; color:var(--text2);">Part I only</span>
-        </label>
-        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin:0;">
-          <input type="checkbox" id="test-part-ii-only" style="width:16px;height:16px;accent-color:var(--accent)"/>
-          <span style="font-size:13px; color:var(--text2);">Part II only</span>
-        </label>
       </div>
-      <p class="text-muted" style="margin-bottom:16px;">One question is randomly selected for each problem number 1 through 15. Questions may come from different years but difficulty is preserved by position.</p>
+      <p class="text-muted" style="margin-bottom:16px;">One question is randomly selected for each problem number. Questions may come from different years but difficulty is preserved by position.</p>
       <button class="btn btn-primary btn-lg" id="start-test-btn">▶ Start Test</button>
     </div>
 
@@ -1126,7 +1132,7 @@ input:checked + .slider::before { transform: translateX(20px); }
       <!-- Question navigator -->
       <div class="card" style="padding:16px 20px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <span style="font-size:12px; color:var(--text3); font-weight:600; text-transform:uppercase; letter-spacing:0.06em;">Question <span id="test-q-label">1</span> of 15</span>
+          <span style="font-size:12px; color:var(--text3); font-weight:600; text-transform:uppercase; letter-spacing:0.06em;">Question <span id="test-q-label">1</span> of <span id="test-q-total">?</span></span>
           <span style="font-size:12px; color:var(--text3);"><span id="test-answered-count">0</span> answered</span>
         </div>
         <div class="test-progress-grid" id="test-progress-dots"></div>
@@ -1149,8 +1155,8 @@ input:checked + .slider::before { transform: translateX(20px); }
 
           <div class="answer-area" style="margin-top:20px; align-items:flex-end;">
             <div class="form-group" style="margin:0;">
-              <label>Your Answer (000–999)</label>
-              <input type="number" id="test-answer-input" min="0" max="999" placeholder="e.g. 42" style="height:50px; font-size:1.2rem; font-family:var(--font-mono); text-align:center;"/>
+              <label id="test-answer-input-label">Your Answer</label>
+              <input type="text" id="test-answer-input" placeholder="e.g. 42" style="height:50px; font-size:1.2rem; font-family:var(--font-mono); text-align:center;"/>
             </div>
             <button class="btn btn-primary" id="test-submit-btn2" style="height:50px;">Submit</button>
             <button class="btn btn-secondary" id="test-next-btn" style="height:50px;">Next →</button>
@@ -1195,7 +1201,11 @@ input:checked + .slider::before { transform: translateX(20px); }
     </div>
     <div class="filter-row">
       <div class="form-group">
-        <label>Filter Year</label>
+        <label>Competition</label>
+        <select id="hist-comp"><option value="all">All</option></select>
+      </div>
+      <div class="form-group">
+        <label>Year</label>
         <select id="hist-year"><option value="all">All</option></select>
       </div>
       <div class="form-group">
@@ -1204,6 +1214,14 @@ input:checked + .slider::before { transform: translateX(20px); }
           <option value="all">All</option>
           <option value="correct">Correct</option>
           <option value="wrong">Wrong</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Sort By</label>
+        <select id="hist-sort">
+          <option value="date">Date</option>
+          <option value="comp">Competition</option>
+          <option value="year">Year</option>
         </select>
       </div>
     </div>
@@ -1219,8 +1237,8 @@ input:checked + .slider::before { transform: translateX(20px); }
           <thead>
             <tr>
               <th class="col-id">ID</th>
+              <th>Competition</th>
               <th>Year</th>
-              <th>Part</th>
               <th>Prob #</th>
               <th>Your Ans</th>
               <th class="col-correct-ans">Correct Ans</th>
@@ -1460,8 +1478,8 @@ document.getElementById('mobile-reset-btn').addEventListener('click', () => {
 // ============================================================
 function buildPool(opts = {}) {
   let pool = [...problems];
+  if (opts.comp && opts.comp !== 'all') pool = pool.filter(p => p.Comp === opts.comp);
   if (opts.year && opts.year !== 'all') pool = pool.filter(p => p.Year === opts.year);
-  if (opts.part && opts.part !== 'all') pool = pool.filter(p => p.P === opts.part);
   if (opts.prob && opts.prob !== 'all') pool = pool.filter(p => p.PN === opts.prob);
 
   const attempts = loadAttempts();
@@ -1494,13 +1512,13 @@ function buildPool(opts = {}) {
 // PRACTICE SESSION
 // ============================================================
 function startSession() {
+  const comp = document.getElementById('filter-comp').value;
   const year = document.getElementById('filter-year').value;
-  const part = document.getElementById('filter-part').value;
   const prob = document.getElementById('filter-prob').value;
   const noRepeat = document.getElementById('no-repeat').checked;
   const onlyWrong = document.getElementById('only-wrong').checked;
 
-  sessionQueue = buildPool({ year, part, prob, noRepeat, onlyWrong });
+  sessionQueue = buildPool({ comp, year, prob, noRepeat, onlyWrong });
   sessionIndex = 0;
 
   if (!sessionQueue.length) {
@@ -1645,12 +1663,19 @@ async function showQuestion(problem) {
 
   // Meta badges
   const meta = document.getElementById('question-meta');
-  let metaHTML = `<span class="badge badge-accent">${problem.Year}</span>`;
-  if (problem.P) metaHTML += `<span class="badge">Part ${problem.P}</span>`;
+  let metaHTML = `<span class="badge badge-accent">${problem.Comp}</span>`;
+  metaHTML += `<span class="badge">${problem.Year}</span>`;
   metaHTML += `<span class="badge">Problem ${problem.PN}</span>`;
   if (settings.showid)
-    metaHTML += `<span class="badge" style="opacity:0.6;font-family:var(--font-mono);font-size:11px;">${problem.ID}</span>`;
+    metaHTML += `<span class="badge" style="opacity:0.6;font-family:var(--font-mono);font-size:11px;">${problem.ID.slice(0,8)}…</span>`;
   meta.innerHTML = metaHTML;
+
+  // Update answer input label based on competition type
+  const ansLabel = document.getElementById('answer-input-label');
+  if (ansLabel) {
+    ansLabel.textContent = problem.IsAIME ? 'Your Answer (integer 000–999)' : 'Your Answer (A–E letter or numeric value)';
+  }
+  document.getElementById('answer-input').placeholder = problem.IsAIME ? 'e.g. 42' : 'e.g. B or 6.54';
 
   // ⚠️ wait for render BEFORE continuing
   const html = await renderProblemText(problem.Q);
@@ -1685,13 +1710,12 @@ async function showQuestion(problem) {
 
 
 function getAoPSUrl(problem) {
+  if (problem.Link) return problem.Link;
+  // Fallback construction
   const year = parseInt(problem.Year, 10);
   const pn = problem.PN;
-  if (year < 2000) {
-    return `https://artofproblemsolving.com/wiki/index.php?title=${year}_AIME_Problems/Problem_${pn}`;
-  }
-  const part = problem.P ? `_${problem.P}` : '_I';
-  return `https://artofproblemsolving.com/wiki/index.php?title=${year}_AIME${part}_Problems/Problem_${pn}`;
+  const comp = (problem.Comp || 'AIME').replace(/ /g, '_');
+  return `https://artofproblemsolving.com/wiki/index.php/${year}_${comp}_Problems/Problem_${pn}`;
 }
 
 function showSolutionLink(problem) {
@@ -1707,20 +1731,41 @@ function showSolutionLink(problem) {
   document.getElementById('post-answer-area').querySelector('.flex-row').appendChild(a);
 }
 
+function checkAnswer(userVal, problem) {
+  const correctA = String(problem.A).trim();
+  // For AMC: compare numeric values (answer is numeric like "2", "6.54")
+  // User may enter letter (A-E) for AMC, or the numeric value
+  const userStr = String(userVal).trim().toUpperCase();
+  const correctNum = String(correctA).trim();
+  // Check by numeric value
+  const numMatch = parseFloat(userStr) === parseFloat(correctNum);
+  // Check by letter (if problem has a letter answer)
+  const letterMatch = problem.Letter && userStr === String(problem.Letter).trim().toUpperCase();
+  return numMatch || letterMatch;
+}
+
+function getAnswerLabel(problem) {
+  if (problem.IsAIME) return 'Your Answer (integer 000–999)';
+  if (problem.Letter) return `Your Answer (A–E or numeric value, correct letter: shown after submit)`;
+  return 'Your Answer';
+}
+
 function submitAnswer() {
   const val = document.getElementById('answer-input').value.trim();
   if (val === '') { alert('Please enter an answer.'); return; }
-  const userAns = parseInt(val, 10);
-  const correctAns = parseInt(currentProblem.A, 10);
-  const correct = userAns === correctAns;
+  const correctAns = currentProblem.A;
+  const correct = checkAnswer(val, currentProblem);
+  const displayCorrect = currentProblem.Letter
+    ? `${currentProblem.Letter} (${correctAns})`
+    : correctAns;
 
-  recordAttempt(currentProblem.ID, correct, userAns, correctAns);
+  recordAttempt(currentProblem.ID, correct, val, correctAns);
 
   const banner = document.getElementById('result-banner');
   banner.className = 'result-banner show ' + (correct ? 'correct' : 'wrong');
   banner.innerHTML = correct
-    ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg> Correct! The answer is <strong>${correctAns}</strong>.`
-    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span style="white-space:nowrap">Incorrect.</span><span style="white-space:nowrap">Your answer: <strong>${userAns}</strong></span><span style="white-space:nowrap">Correct: <strong>${correctAns}</strong></span>`;
+    ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg> Correct! The answer is <strong>${displayCorrect}</strong>.`
+    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span style="white-space:nowrap">Incorrect.</span><span style="white-space:nowrap">Your answer: <strong>${val}</strong></span><span style="white-space:nowrap">Correct: <strong>${displayCorrect}</strong></span>`;
 
   document.getElementById('answer-input').disabled = true;
   document.getElementById('submit-btn').disabled = true;
@@ -1735,13 +1780,16 @@ function submitAnswer() {
 }
 
 function revealAnswer() {
-  const correctAns = parseInt(currentProblem.A, 10);
+  const correctAns = currentProblem.A;
+  const displayCorrect = currentProblem.Letter
+    ? `${currentProblem.Letter} (${correctAns})`
+    : correctAns;
   const banner = document.getElementById('result-banner');
   banner.className = 'result-banner show';
   banner.style.background = 'rgba(108,142,245,0.1)';
   banner.style.borderColor = 'var(--accent)';
   banner.style.color = 'var(--accent)';
-  banner.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> The answer is <strong>${correctAns}</strong>`;
+  banner.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> The answer is <strong>${displayCorrect}</strong>`;
   recordAttempt(currentProblem.ID, false, null, correctAns);
   document.getElementById('answer-input').disabled = true;
   document.getElementById('submit-btn').disabled = true;
@@ -1794,8 +1842,8 @@ document.getElementById('answer-input').addEventListener('keydown', e => {
 // Quick start buttons
 document.getElementById('quick-random').addEventListener('click', () => {
   navigate('practice');
+  document.getElementById('filter-comp').value = 'all';
   document.getElementById('filter-year').value = 'all';
-  document.getElementById('filter-part').value = 'all';
   document.getElementById('filter-prob').value = 'all';
   document.getElementById('no-repeat').checked = false;
   document.getElementById('only-wrong').checked = false;
@@ -1818,11 +1866,24 @@ document.getElementById('quick-wrong').addEventListener('click', () => {
 // BROWSE
 // ============================================================
 function renderBrowse() {
+  const comp = document.getElementById('browse-comp').value;
   const year = document.getElementById('browse-year').value;
-  const part = document.getElementById('browse-part').value;
+  const sortBy = document.getElementById('browse-sort').value;
 
-  let pool = problems.filter(p => p.Year === year);
-  if (part !== 'all') pool = pool.filter(p => p.P === part);
+  let pool = problems.filter(p => p.Comp === comp);
+  if (year && year !== 'all') pool = pool.filter(p => p.Year === year);
+
+  // Sort
+  if (sortBy === 'num') {
+    pool.sort((a, b) => (parseInt(a.PN) || 0) - (parseInt(b.PN) || 0) || a.Year.localeCompare(b.Year));
+  } else if (sortBy === 'status') {
+    const attempts = loadAttempts();
+    pool.sort((a, b) => {
+      const sa = getStatus(a.ID, attempts), sb = getStatus(b.ID, attempts);
+      const order = { correct: 0, wrong: 1, unseen: 2 };
+      return (order[sa] ?? 3) - (order[sb] ?? 3);
+    });
+  }
 
   const attempts = loadAttempts();
   const grid = document.getElementById('browse-grid');
@@ -1831,17 +1892,23 @@ function renderBrowse() {
   pool.forEach(p => {
     const btn = document.createElement('div');
     btn.className = 'prob-btn';
-    btn.textContent = p.PN;
-    const hist = attempts[p.ID];
-    if (hist && hist.length) {
-      if (hist.some(a => a.correct)) btn.classList.add('done-correct');
-      else btn.classList.add('done-wrong');
-    }
+    btn.textContent = `#${p.PN}`;
+    btn.title = `${p.Comp} ${p.Year} #${p.PN}`;
+    const status = getStatus(p.ID, attempts);
+    if (status === 'correct') btn.classList.add('done-correct');
+    else if (status === 'wrong') btn.classList.add('done-wrong');
     btn.addEventListener('click', () => showBrowseProblem(p));
     grid.appendChild(btn);
   });
 
   document.getElementById('browse-problem-card').style.display = 'none';
+}
+
+function getStatus(id, attempts) {
+  const hist = attempts[id];
+  if (!hist || !hist.length) return 'unseen';
+  if (hist.some(a => a.correct)) return 'correct';
+  return 'wrong';
 }
 
 function showBrowseProblem(p) {
@@ -1850,12 +1917,12 @@ function showBrowseProblem(p) {
 
   const meta = document.getElementById('browse-question-meta');
   meta.innerHTML = `
-    <span class="badge badge-accent">${p.Year}</span>
-    ${p.P ? `<span class="badge">Part ${p.P}</span>` : ''}
+    <span class="badge badge-accent">${p.Comp}</span>
+    <span class="badge">${p.Year}</span>
     <span class="badge">Problem ${p.PN}</span>
-    <span class="badge" style="font-family:var(--font-mono);font-size:11px;">${p.ID}</span>
-    <a href="${getAoPSUrl(p)}" target="_blank" rel="noopener" class="badge" style="background:var(--accent-glow);color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42L17.59 5H14V3zM5 5h6v2H7v10h10v-4h2v6H5V5z"/></svg>Solution
+    <span class="badge" style="font-family:var(--font-mono);font-size:11px;">${p.ID.slice(0,8)}…</span>
+    <a href="${p.Link || getAoPSUrl(p)}" target="_blank" rel="noopener" class="badge" style="background:var(--accent-glow);color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42L17.59 5H14V3zM5 5h6v2H7v10h10v-4h2v6H5V5z"/></svg>AoPS
     </a>
   `;
 
@@ -1889,8 +1956,10 @@ document.getElementById('browse-reveal-ans').addEventListener('click', () => {
   document.getElementById('browse-reveal-ans').style.display = 'none';
 });
 
+document.getElementById('browse-comp').addEventListener('change', () => { updateBrowseYears(); renderBrowse(); });
+document.getElementById('filter-comp').addEventListener('change', () => { updateProbFilter(); });
 document.getElementById('browse-year').addEventListener('change', renderBrowse);
-document.getElementById('browse-part').addEventListener('change', renderBrowse);
+document.getElementById('browse-sort').addEventListener('change', renderBrowse);
 
 // ============================================================
 // HOME PAGE
@@ -2091,28 +2160,34 @@ function renderByPartChart(filtered) {
   const ctx = document.getElementById('chart-by-part');
   if (charts['by-part']) charts['by-part'].destroy();
 
-  const parts = { 'Classic': { c: 0, t: 0 }, 'Part I': { c: 0, t: 0 }, 'Part II': { c: 0, t: 0 } };
+  const compMap = {};
   filtered.forEach(a => {
     const prob = problems.find(p => p.ID === a.id);
     if (!prob) return;
-    const key = !prob.P ? 'Classic' : `Part ${prob.P}`;
-    parts[key].t++;
-    if (a.correct) parts[key].c++;
+    const key = prob.Comp || 'Unknown';
+    if (!compMap[key]) compMap[key] = { c: 0, t: 0 };
+    compMap[key].t++;
+    if (a.correct) compMap[key].c++;
   });
+
+  const labels = Object.keys(compMap).sort();
+  const colors = ['rgba(108,142,245,0.8)', 'rgba(167,139,250,0.8)', 'rgba(94,207,128,0.8)',
+    'rgba(251,191,36,0.8)', 'rgba(248,113,113,0.8)', 'rgba(56,189,248,0.8)',
+    'rgba(232,121,249,0.8)', 'rgba(251,146,60,0.8)', 'rgba(129,140,248,0.8)', 'rgba(52,211,153,0.8)'];
 
   charts['by-part'] = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: Object.keys(parts),
+      labels,
       datasets: [{
-        data: Object.values(parts).map(v => v.t ? Math.round(v.c / v.t * 100) : 0),
-        backgroundColor: ['rgba(108,142,245,0.8)', 'rgba(167,139,250,0.8)', 'rgba(94,207,128,0.8)'],
+        data: labels.map(k => compMap[k].t ? Math.round(compMap[k].c / compMap[k].t * 100) : 0),
+        backgroundColor: labels.map((_, i) => colors[i % colors.length]),
         borderWidth: 0, borderRadius: 4
       }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: '#9198b5', font: { family: 'Outfit' } } } }
+      plugins: { legend: { labels: { color: '#9198b5', font: { family: 'Outfit', size: 11 } } } }
     }
   });
 }
@@ -2183,13 +2258,14 @@ function renderTestStatsSection() {
   const avgScore = (tests.reduce((s, t) => s + t.score, 0) / tests.length).toFixed(1);
   const bestScore = Math.max(...tests.map(t => t.score));
   const recentScore = tests[tests.length - 1].score;
-  const avgPct = Math.round(parseFloat(avgScore) / 15 * 100);
+  const avgTotal = tests.reduce((s,t)=>s+(t.total||15),0)/tests.length;
+  const avgPct = Math.round(parseFloat(avgScore) / avgTotal * 100);
 
   summaryEl.innerHTML = `
     <div class="stat-card"><div class="stat-value">${tests.length}</div><div class="stat-label">Tests Taken</div></div>
-    <div class="stat-card stat-correct"><div class="stat-value">${bestScore}/15</div><div class="stat-label">Best Score</div></div>
+    <div class="stat-card stat-correct"><div class="stat-value">${bestScore}/${tests.find(t=>t.score===bestScore)?.total||'?'}</div><div class="stat-label">Best Score</div></div>
     <div class="stat-card stat-accent2"><div class="stat-value">${avgScore}</div><div class="stat-label">Avg Score</div><div class="stat-sub">${avgPct}%</div></div>
-    <div class="stat-card"><div class="stat-value">${recentScore}/15</div><div class="stat-label">Last Test</div></div>
+    <div class="stat-card"><div class="stat-value">${recentScore}/${tests[tests.length-1]?.total||'?'}</div><div class="stat-label">Last Test</div></div>
   `;
 
   // Score distribution chart
@@ -2253,21 +2329,41 @@ document.getElementById('stats-time-filter').addEventListener('click', e => {
 // ============================================================
 function renderHistory() {
   const attempts = loadAttempts();
+  const histComp = document.getElementById('hist-comp').value;
   const histYear = document.getElementById('hist-year').value;
   const histResult = document.getElementById('hist-result').value;
+  const histSort = document.getElementById('hist-sort').value;
 
   const rows = [];
   Object.entries(attempts).forEach(([id, arr]) => {
     arr.forEach(a => rows.push({ id, ...a }));
   });
-  rows.sort((a, b) => new Date(b.date) - new Date(a.date));
 
   let filtered = rows;
+  if (histComp !== 'all') filtered = filtered.filter(r => {
+    const p = problems.find(x => x.ID === r.id);
+    return p && p.Comp === histComp;
+  });
   if (histYear !== 'all') filtered = filtered.filter(r => {
     const p = problems.find(x => x.ID === r.id);
     return p && p.Year === histYear;
   });
   if (histResult !== 'all') filtered = filtered.filter(r => histResult === 'correct' ? r.correct : !r.correct);
+
+  // Sort
+  if (histSort === 'date') {
+    filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+  } else if (histSort === 'comp') {
+    filtered.sort((a, b) => {
+      const pa = problems.find(x => x.ID === a.id), pb = problems.find(x => x.ID === b.id);
+      return (pa?.Comp || '').localeCompare(pb?.Comp || '') || (pa?.Year || '').localeCompare(pb?.Year || '');
+    });
+  } else if (histSort === 'year') {
+    filtered.sort((a, b) => {
+      const pa = problems.find(x => x.ID === a.id), pb = problems.find(x => x.ID === b.id);
+      return (pa?.Year || '').localeCompare(pb?.Year || '') || (pa?.Comp || '').localeCompare(pb?.Comp || '');
+    });
+  }
 
   const tbody = document.getElementById('history-tbody');
   if (!filtered.length) {
@@ -2279,8 +2375,8 @@ function renderHistory() {
     const prob = problems.find(p => p.ID === r.id);
     return `<tr>
       <td class="col-id">${r.id}</td>
+      <td><span class="badge" style="font-size:10px;padding:2px 6px;">${prob?.Comp || '—'}</span></td>
       <td>${prob?.Year || '—'}</td>
-      <td>${prob?.P || 'Classic'}</td>
       <td>${prob?.PN || '—'}</td>
       <td style="font-family:var(--font-mono);">${r.userAnswer ?? '—'}</td>
       <td class="col-correct-ans" style="font-family:var(--font-mono); color:var(--accent);">${r.correctAnswer ?? prob?.A ?? '—'}</td>
@@ -2290,16 +2386,18 @@ function renderHistory() {
   }).join('');
 }
 
+document.getElementById('hist-comp').addEventListener('change', renderHistory);
 document.getElementById('hist-year').addEventListener('change', renderHistory);
 document.getElementById('hist-result').addEventListener('change', renderHistory);
+document.getElementById('hist-sort').addEventListener('change', renderHistory);
 
 document.getElementById('export-btn').addEventListener('click', () => {
   const attempts = loadAttempts();
-  let csv = 'ID,Year,Part,Problem Number,Your Answer,Correct Answer,Result,Date\n';
+  let csv = 'ID,Competition,Year,Problem Number,Your Answer,Correct Answer,Result,Date\n';
   Object.entries(attempts).forEach(([id, arr]) => {
     const prob = problems.find(p => p.ID === id);
     arr.forEach(a => {
-      csv += `${id},${prob?.Year||''},${prob?.P||''},${prob?.PN||''},${a.userAnswer??''},${a.correctAnswer??''},${a.correct?'correct':'wrong'},${a.date||''}\n`;
+      csv += `${id},${prob?.Comp||''},${prob?.Year||''},${prob?.PN||''},${a.userAnswer??''},${a.correctAnswer??''},${a.correct?'correct':'wrong'},${a.date||''}\n`;
     });
   });
   const blob = new Blob([csv], { type: 'text/csv' });
@@ -2423,32 +2521,37 @@ function renderTestsPage() {
 
 function buildTestQuestions() {
   const noRepeat = document.getElementById('test-no-repeat').checked;
-  const partIOnly = document.getElementById('test-part-i-only').checked;
-  const partIIOnly = document.getElementById('test-part-ii-only').checked;
+  const testCompVal = document.getElementById('test-comp').value;
+  const testYearVal = document.getElementById('test-year').value;
   const attempts = loadAttempts();
 
-  const questions = [];
-  for (let pn = 1; pn <= 15; pn++) {
-    let pool = problems.filter(p => parseInt(p.PN, 10) === pn);
+  // Filter base pool by competition
+  let basePool = [...problems];
+  if (testCompVal === 'AIME_ALL') basePool = basePool.filter(p => p.Comp.startsWith('AIME'));
+  else if (testCompVal === 'AMC_ALL') basePool = basePool.filter(p => p.Comp.startsWith('AMC'));
+  else basePool = basePool.filter(p => p.Comp === testCompVal);
+  if (testYearVal !== 'all') basePool = basePool.filter(p => p.Year === testYearVal);
 
-    // Part filter
-    if (partIOnly) pool = pool.filter(p => p.P === 'I' || p.P === '');
-    if (partIIOnly) pool = pool.filter(p => p.P === 'II');
+  // Determine max problem number in pool
+  const maxPN = Math.max(...basePool.map(p => parseInt(p.PN) || 0).filter(n => n > 0));
+  if (!maxPN) return null;
+
+  const questions = [];
+  for (let pn = 1; pn <= maxPN; pn++) {
+    let pool = basePool.filter(p => parseInt(p.PN, 10) === pn);
+    if (!pool.length) continue;
 
     // noRepeat: exclude problems already attempted (correctly or not)
     if (noRepeat) {
       const noRepeatPool = pool.filter(p => !attempts[p.ID] || attempts[p.ID].length === 0);
-      // fall back to full pool for this position if exhausted
       pool = noRepeatPool.length ? noRepeatPool : pool;
     }
-
-    if (!pool.length) return null; // can't build test
 
     // Pick a random one
     const pick = pool[Math.floor(Math.random() * pool.length)];
     questions.push(pick);
   }
-  return questions;
+  return questions.length ? questions : null;
 }
 
 function startTest() {
@@ -2458,7 +2561,7 @@ function startTest() {
     return;
   }
   testQuestions = qs;
-  testAnswers = Array(15).fill(null);
+  testAnswers = Array(qs.length).fill(null);
   testCurrentIdx = 0;
   testActive = true;
 
@@ -2471,6 +2574,8 @@ function startTest() {
 }
 
 function renderTestNav() {
+  const totalEl = document.getElementById('test-q-total');
+  if (totalEl) totalEl.textContent = testQuestions.length;
   // Progress dots
   const dotsEl = document.getElementById('test-progress-dots');
   dotsEl.innerHTML = '';
@@ -2490,7 +2595,7 @@ function renderTestNav() {
     row.className = 'test-q-row' + (i === testCurrentIdx ? ' current-q' : '');
     row.innerHTML = `
       <div class="test-q-num ${ans === null ? '' : ans.correct ? 'status-correct' : 'status-wrong'}">${i + 1}</div>
-      <span class="test-q-year">${testQuestions[i].Year}</span>
+      <span class="test-q-year">${testQuestions[i].Comp} ${testQuestions[i].Year}</span>
       <span class="test-q-status-icon">
         ${ans === null
           ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>'
@@ -2516,8 +2621,8 @@ async function showTestQuestion(idx) {
   const settings = loadSettings();
 
   const meta = document.getElementById('test-question-meta');
-  let metaHTML = `<span class="badge badge-accent">${problem.Year}</span>`;
-  if (problem.P) metaHTML += `<span class="badge">Part ${problem.P}</span>`;
+  let metaHTML = `<span class="badge badge-accent">${problem.Comp}</span>`;
+  metaHTML += `<span class="badge">${problem.Year}</span>`;
   metaHTML += `<span class="badge">Problem ${problem.PN}</span>`;
   if (settings.showid)
     metaHTML += `<span class="badge" style="opacity:0.6;font-family:var(--font-mono);font-size:11px;">${problem.ID}</span>`;
@@ -2527,9 +2632,15 @@ async function showTestQuestion(idx) {
   document.getElementById('test-question-body').innerHTML = html;
   requestAnimationFrame(() => typeset('#test-question-body'));
 
+  // Update label and placeholder based on competition type
+  const testLabel = document.getElementById('test-answer-input-label');
+  if (testLabel) testLabel.textContent = problem.IsAIME ? 'Your Answer (000–999)' : 'Your Answer (A–E or numeric)';
+
   // Restore answer state if already answered
   const input = document.getElementById('test-answer-input');
+  input.placeholder = problem.IsAIME ? 'e.g. 42' : 'e.g. B or 6.54';
   const banner = document.getElementById('test-result-banner');
+  const displayCorrect = problem.Letter ? `${problem.Letter} (${ans?.correctAnswer||problem.A})` : (ans?.correctAnswer||problem.A);
 
   if (ans !== null) {
     input.value = ans.userAnswer ?? '';
@@ -2538,8 +2649,8 @@ async function showTestQuestion(idx) {
     document.getElementById('test-submit-btn2').disabled = true;
     banner.className = 'result-banner show ' + (ans.correct ? 'correct' : 'wrong');
     banner.innerHTML = ans.correct
-      ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg> Correct! The answer is <strong>${ans.correctAnswer}</strong>.`
-      : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span>Incorrect.</span><span>Your answer: <strong>${ans.userAnswer}</strong></span><span>Correct: <strong>${ans.correctAnswer}</strong></span>`;
+      ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg> Correct! The answer is <strong>${displayCorrect}</strong>.`
+      : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span>Incorrect.</span><span>Your answer: <strong>${ans.userAnswer}</strong></span><span>Correct: <strong>${displayCorrect}</strong></span>`;
   } else {
     input.value = '';
     input.disabled = false;
@@ -2564,20 +2675,20 @@ function submitTestAnswer() {
   if (val === '') { alert('Please enter an answer.'); return; }
 
   const problem = testQuestions[idx];
-  const userAnswer = parseInt(val, 10);
-  const correctAnswer = parseInt(problem.A, 10);
-  const correct = userAnswer === correctAnswer;
+  const correctAnswer = problem.A;
+  const correct = checkAnswer(val, problem);
+  const displayCorrect = problem.Letter ? `${problem.Letter} (${correctAnswer})` : correctAnswer;
 
-  testAnswers[idx] = { userAnswer, correctAnswer, correct };
+  testAnswers[idx] = { userAnswer: val, correctAnswer, correct };
 
   // Record as a regular attempt too
-  recordAttempt(problem.ID, correct, userAnswer, correctAnswer);
+  recordAttempt(problem.ID, correct, val, correctAnswer);
 
   const banner = document.getElementById('test-result-banner');
   banner.className = 'result-banner show ' + (correct ? 'correct' : 'wrong');
   banner.innerHTML = correct
-    ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg> Correct! The answer is <strong>${correctAnswer}</strong>.`
-    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span>Incorrect.</span><span>Your answer: <strong>${userAnswer}</strong></span><span>Correct: <strong>${correctAnswer}</strong></span>`;
+    ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg> Correct! The answer is <strong>${displayCorrect}</strong>.`
+    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span>Incorrect.</span><span>Your answer: <strong>${val}</strong></span><span>Correct: <strong>${displayCorrect}</strong></span>`;
 
   document.getElementById('test-answer-input').disabled = true;
   document.getElementById('test-submit-btn').disabled = true;
@@ -2607,13 +2718,13 @@ function finishTest() {
     pn: i + 1,
     id: testQuestions[i].ID,
     year: testQuestions[i].Year,
-    part: testQuestions[i].P,
+    comp: testQuestions[i].Comp,
     correct: a.correct,
     userAnswer: a.userAnswer,
     correctAnswer: a.correctAnswer
   }));
 
-  recordTest(score, 15, results);
+  recordTest(score, testQuestions.length, results);
   testActive = false;
 
   showTestResults(score, results);
@@ -2623,8 +2734,9 @@ function showTestResults(score, results) {
   document.getElementById('test-active').style.display = 'none';
   document.getElementById('test-results').style.display = '';
 
-  const pct = Math.round(score / 15 * 100);
-  document.getElementById('test-score-title').textContent = `${score} / 15`;
+  const total = testQuestions.length;
+  const pct = Math.round(score / total * 100);
+  document.getElementById('test-score-title').textContent = `${score} / ${total}`;
   document.getElementById('test-score-subtitle').textContent =
     pct >= 80 ? '🏆 Excellent work!' :
     pct >= 60 ? '👍 Good effort — keep practicing!' :
@@ -2655,7 +2767,7 @@ function showTestResults(score, results) {
       wrongOnes.map(r => `
         <div style="display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--border);">
           <span class="badge" style="flex-shrink:0;">Q${r.pn}</span>
-          <span style="font-size:12px; color:var(--text2); flex:1;">${r.year}${r.part ? ' Part ' + r.part : ''}</span>
+          <span style="font-size:12px; color:var(--text2); flex:1;">${r.comp || ''} ${r.year}</span>
           <span style="font-size:12px; color:var(--text3);">Your: <strong style="color:var(--wrong);">${r.userAnswer ?? '—'}</strong></span>
           <span style="font-size:12px; color:var(--text3);">Ans: <strong style="color:var(--correct);">${r.correctAnswer}</strong></span>
           <a href="${getAoPSUrl(testQuestions[r.pn - 1])}" target="_blank" rel="noopener" class="badge" style="background:var(--accent-glow);color:var(--accent);text-decoration:none;">
@@ -2679,7 +2791,7 @@ document.getElementById('test-submit-btn').addEventListener('click', submitTestA
 document.getElementById('test-submit-btn2').addEventListener('click', submitTestAnswer);
 document.getElementById('test-next-btn').addEventListener('click', () => {
   const nextIdx = testAnswers.findIndex((a, i) => i > testCurrentIdx && a === null);
-  const idx = nextIdx !== -1 ? nextIdx : (testCurrentIdx + 1 < 15 ? testCurrentIdx + 1 : testCurrentIdx);
+  const idx = nextIdx !== -1 ? nextIdx : (testCurrentIdx + 1 < testQuestions.length ? testCurrentIdx + 1 : testCurrentIdx);
   showTestQuestion(idx);
 });
 document.getElementById('test-finish-btn').addEventListener('click', finishTest);
@@ -2700,11 +2812,12 @@ document.getElementById('test-answer-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') submitTestAnswer();
 });
 // Part filter mutual exclusion
-document.getElementById('test-part-i-only').addEventListener('change', function() {
-  if (this.checked) document.getElementById('test-part-ii-only').checked = false;
-});
-document.getElementById('test-part-ii-only').addEventListener('change', function() {
-  if (this.checked) document.getElementById('test-part-i-only').checked = false;
+// Update test year dropdown when competition changes
+document.getElementById('test-comp').addEventListener('change', function() {
+  const years = getYearsForComp(this.value);
+  const testYearSel = document.getElementById('test-year');
+  testYearSel.innerHTML = '<option value="all">All Years</option>';
+  years.forEach(y => { const o = document.createElement('option'); o.value = y; o.textContent = y; testYearSel.appendChild(o); });
 });
 
 // ============================================================
@@ -2766,60 +2879,151 @@ async function init() {
   applySettings(settings);
 
   try {
-    const DATASET_URL = './dataset/AIME_Dataset_1983_2024.csv';
+    const DATASET_URL = './dataset/dataset.csv';
     const resp = await fetch(DATASET_URL);
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const text = await resp.text();
 
-    problems = Papa.parse(text, {
-      header: true,
-      skipEmptyLines: true
-    }).data
-      .filter(r => r.Question && r.Answer)
-      .map(r => ({
-        ID: r.ID,
-        Year: r.Year,
-        PN: r['Problem Number'],
-        Q: r.Question,
-        A: r.Answer,
-        P: r.Part
-      }));
+    // Parse and deduplicate by problem_id (keep first occurrence)
+    const raw = Papa.parse(text, { header: true, skipEmptyLines: true }).data;
+    const seen = new Set();
+    const deduped = [];
+    raw.forEach(r => {
+      if (!r.problem_id || !r.problem) return;
+      if (!seen.has(r.problem_id)) {
+        seen.add(r.problem_id);
+        deduped.push(r);
+      }
+    });
 
-    console.log('Loaded local dataset:', problems.length);
+    problems = deduped.map(r => {
+      // Extract year and competition from link
+      const linkMatch = r.link && r.link.match(/(\d{4})_(AMC_8|AMC_10[AB]?|AMC_12[AB]?|AIME_II|AIME_I|AIME)_Problems/);
+      const year = linkMatch ? linkMatch[1] : '';
+      const comp = linkMatch ? linkMatch[2].replace(/_/g, ' ') : 'AIME';
+      // Determine if AIME-type (integer answer) or AMC-type (letter answer)
+      const isAIME = comp.startsWith('AIME');
+      // Problem number from link
+      const pnMatch = r.link && r.link.match(/Problem_(\d+)/);
+      const pn = pnMatch ? pnMatch[1] : '';
+      return {
+        ID: r.problem_id,
+        Year: year,
+        Comp: comp,
+        PN: pn,
+        Q: r.problem,
+        A: r.answer != null ? String(r.answer) : '',
+        Letter: r.letter || '',
+        IsAIME: isAIME,
+        Link: r.link || ''
+      };
+    });
+
+    console.log('Loaded dataset:', problems.length, 'unique problems');
   } catch (err) {
     console.error('Dataset loading failed:', err);
     document.getElementById('loading-overlay').innerHTML = `
-      <p style="color:var(--wrong); font-weight:600;">Failed to load dataset.</p>
+      <p style="color:var(--wrong); font-weight:600;">Failed to load dataset. Make sure dataset.csv is at ./dataset/dataset.csv</p>
     `;
     return;
   }
 
-  const years = [...new Set(problems.map(p => p.Year))].filter(Boolean).sort();
-  const yearSelects = ['filter-year', 'browse-year', 'hist-year'];
+  // Populate competition dropdowns
+  const comps = [...new Set(problems.map(p => p.Comp))].filter(Boolean).sort();
+  const compOrder = ['AIME', 'AIME I', 'AIME II', 'AMC 8', 'AMC 10', 'AMC 10A', 'AMC 10B', 'AMC 12', 'AMC 12A', 'AMC 12B'];
+  const sortedComps = [...compOrder.filter(c => comps.includes(c)), ...comps.filter(c => !compOrder.includes(c))];
 
-  yearSelects.forEach(id => {
-    const sel = document.getElementById(id);
-    const hasAll = id !== 'browse-year';
-    sel.innerHTML = '';
-    if (hasAll) sel.innerHTML = '<option value="all">All Years</option>';
-    years.forEach(y => {
-      const o = document.createElement('option');
-      o.value = y; o.textContent = y; sel.appendChild(o);
-    });
+  // Practice competition filter
+  const filterCompSel = document.getElementById('filter-comp');
+  filterCompSel.innerHTML = '<option value="all">All Competitions</option>';
+  sortedComps.forEach(c => {
+    const o = document.createElement('option'); o.value = c; o.textContent = c; filterCompSel.appendChild(o);
   });
 
-  if (years.includes('2024')) document.getElementById('browse-year').value = '2024';
+  // Browse competition filter - default to first AIME
+  const browseCompSel = document.getElementById('browse-comp');
+  browseCompSel.innerHTML = '';
+  sortedComps.forEach(c => {
+    const o = document.createElement('option'); o.value = c; o.textContent = c; browseCompSel.appendChild(o);
+  });
 
-  const probSel = document.getElementById('filter-prob');
-  probSel.innerHTML = '<option value="all">Any</option>';
-  for (let i = 1; i <= 15; i++) {
-    const o = document.createElement('option');
-    o.value = String(i); o.textContent = `#${i}`; probSel.appendChild(o);
-  }
+  // History competition filter
+  const histCompSel = document.getElementById('hist-comp');
+  histCompSel.innerHTML = '<option value="all">All Competitions</option>';
+  sortedComps.forEach(c => {
+    const o = document.createElement('option'); o.value = c; o.textContent = c; histCompSel.appendChild(o);
+  });
+
+  // Test competition filter - AIME competitions + option for AMC
+  const testCompSel = document.getElementById('test-comp');
+  testCompSel.innerHTML = '';
+  const aimeComps = sortedComps.filter(c => c.startsWith('AIME'));
+  const amcComps = sortedComps.filter(c => c.startsWith('AMC'));
+  [{ v: 'AIME_ALL', t: 'AIME (all)' }, ...aimeComps.map(c => ({ v: c, t: c })),
+   { v: 'AMC_ALL', t: 'AMC (all)' }, ...amcComps.map(c => ({ v: c, t: c }))
+  ].forEach(({ v, t }) => {
+    const o = document.createElement('option'); o.value = v; o.textContent = t; testCompSel.appendChild(o);
+  });
+
+  // Populate year dropdowns (year selects depend on comp selection - start with all)
+  populateYearSelects();
+
+  // Set browse default
+  if (browseCompSel.options.length) browseCompSel.value = browseCompSel.options[0].value;
+  updateBrowseYears();
+
+  // Populate problem # filter
+  updateProbFilter();
 
   document.getElementById('loading-overlay').style.display = 'none';
   renderHome();
   renderBrowse();
+}
+
+function getYearsForComp(compVal) {
+  let pool = [...problems];
+  if (compVal === 'AIME_ALL') pool = pool.filter(p => p.Comp.startsWith('AIME'));
+  else if (compVal === 'AMC_ALL') pool = pool.filter(p => p.Comp.startsWith('AMC'));
+  else if (compVal && compVal !== 'all') pool = pool.filter(p => p.Comp === compVal);
+  return [...new Set(pool.map(p => p.Year))].filter(Boolean).sort();
+}
+
+function populateYearSelects() {
+  // Filter-year and hist-year use their own comp selector to filter years
+  ['filter-year', 'hist-year'].forEach(id => {
+    const sel = document.getElementById(id);
+    const years = getYearsForComp('all');
+    sel.innerHTML = '<option value="all">All Years</option>';
+    years.forEach(y => { const o = document.createElement('option'); o.value = y; o.textContent = y; sel.appendChild(o); });
+  });
+  // Test year
+  const testCompVal = document.getElementById('test-comp').value;
+  const testYears = getYearsForComp(testCompVal);
+  const testYearSel = document.getElementById('test-year');
+  testYearSel.innerHTML = '<option value="all">All Years</option>';
+  testYears.forEach(y => { const o = document.createElement('option'); o.value = y; o.textContent = y; testYearSel.appendChild(o); });
+}
+
+function updateBrowseYears() {
+  const comp = document.getElementById('browse-comp').value;
+  const years = getYearsForComp(comp);
+  const sel = document.getElementById('browse-year');
+  sel.innerHTML = '<option value="all">All Years</option>';
+  years.forEach(y => { const o = document.createElement('option'); o.value = y; o.textContent = y; sel.appendChild(o); });
+  if (years.includes('2024')) sel.value = '2024';
+  else if (years.length) sel.value = years[years.length - 1];
+}
+
+function updateProbFilter() {
+  const comp = document.getElementById('filter-comp').value;
+  let pool = [...problems];
+  if (comp && comp !== 'all') pool = pool.filter(p => p.Comp === comp);
+  const maxPN = Math.max(...pool.map(p => parseInt(p.PN) || 0).filter(n => n > 0));
+  const probSel = document.getElementById('filter-prob');
+  probSel.innerHTML = '<option value="all">Any</option>';
+  for (let i = 1; i <= (maxPN || 30); i++) {
+    const o = document.createElement('option'); o.value = String(i); o.textContent = `#${i}`; probSel.appendChild(o);
+  }
 }
 
 // ============================================================
