@@ -2900,9 +2900,12 @@ async function init() {
 
     problems = deduped.map(r => {
       // Extract year and competition from link
-      const linkMatch = r.link && r.link.match(/(\d{4})_(AMC_8|AMC_10[AB]?|AMC_12[AB]?|AIME_II|AIME_I|AIME)_Problems/);
+      // Ordered from most-specific to least-specific so e.g. AIME_II matches before AIME
+      const linkMatch = r.link && r.link.match(
+        /(\d{4})_(Fall_AMC_12[AB]|Fall_AMC_10[AB]|AMC_12[ABP]?|AMC_10[AB]?|AMC_8|AIME_II|AIME_I|AIME|AJHSME|AHSME|USAJMO|USAMO|USOJMO|USOMO)_Problems/
+      );
       const year = linkMatch ? linkMatch[1] : '';
-      const comp = linkMatch ? linkMatch[2].replace(/_/g, ' ') : 'AIME';
+      const comp = linkMatch ? linkMatch[2].replace(/_/g, ' ') : '';
       // Determine if AIME-type (integer answer) or AMC-type (letter answer)
       const isAIME = comp.startsWith('AIME');
       // Problem number from link
@@ -2932,7 +2935,13 @@ async function init() {
 
   // Populate competition dropdowns
   const comps = [...new Set(problems.map(p => p.Comp))].filter(Boolean).sort();
-  const compOrder = ['AIME', 'AIME I', 'AIME II', 'AMC 8', 'AMC 10', 'AMC 10A', 'AMC 10B', 'AMC 12', 'AMC 12A', 'AMC 12B'];
+  const compOrder = [
+    'AIME', 'AIME I', 'AIME II',
+    'AMC 8', 'AMC 10', 'AMC 10A', 'AMC 10B', 'AMC 12', 'AMC 12A', 'AMC 12B', 'AMC 12P',
+    'AJHSME', 'AHSME',
+    'Fall AMC 10A', 'Fall AMC 10B', 'Fall AMC 12A', 'Fall AMC 12B',
+    'USAJMO', 'USAMO', 'USOJMO', 'USOMO'
+  ];
   const sortedComps = [...compOrder.filter(c => comps.includes(c)), ...comps.filter(c => !compOrder.includes(c))];
 
   // Practice competition filter
