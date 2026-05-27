@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>AIMElab ~ Olympiad Practice</title>
+<title>AIMElab ~ Math Olympiad Practice</title>
+<meta name="description" content="Practice AMC 8, AMC 10, AMC 12, and AIME problems. Filter by competition, track your history, run mock tests, and analyze your performance across 3700+ unique problems."/>
 
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
@@ -542,8 +543,9 @@ input:checked + .slider::before { transform: translateX(20px); }
   box-shadow: 0 4px 20px rgba(0,0,0,0.35);
   pointer-events: none;
   z-index: 999;
-  max-width: 240px;
+  max-width: 360px;
   word-break: break-all;
+  font-family: var(--font-mono);
   opacity: 0;
   transform: translateY(4px);
   transition: opacity 0.15s ease, transform 0.15s ease;
@@ -1667,7 +1669,7 @@ async function showQuestion(problem) {
   metaHTML += `<span class="badge">${problem.Year}</span>`;
   metaHTML += `<span class="badge">Problem ${problem.PN}</span>`;
   if (settings.showid)
-    metaHTML += `<span class="badge" style="opacity:0.6;font-family:var(--font-mono);font-size:11px;">${problem.ID.slice(0,8)}…</span>`;
+    metaHTML += `<span class="badge" style="opacity:0.6;font-family:var(--font-mono);font-size:11px;cursor:default;" data-tooltip="${problem.ID}">${problem.ID.slice(0,8)}…</span>`;
   meta.innerHTML = metaHTML;
 
   // Update answer input label based on competition type
@@ -1920,7 +1922,7 @@ function showBrowseProblem(p) {
     <span class="badge badge-accent">${p.Comp}</span>
     <span class="badge">${p.Year}</span>
     <span class="badge">Problem ${p.PN}</span>
-    <span class="badge" style="font-family:var(--font-mono);font-size:11px;">${p.ID.slice(0,8)}…</span>
+    <span class="badge" style="font-family:var(--font-mono);font-size:11px;cursor:default;" data-tooltip="${p.ID}">${p.ID.slice(0,8)}…</span>
     <a href="${p.Link || getAoPSUrl(p)}" target="_blank" rel="noopener" class="badge" style="background:var(--accent-glow);color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42L17.59 5H14V3zM5 5h6v2H7v10h10v-4h2v6H5V5z"/></svg>AoPS
     </a>
@@ -2625,7 +2627,7 @@ async function showTestQuestion(idx) {
   metaHTML += `<span class="badge">${problem.Year}</span>`;
   metaHTML += `<span class="badge">Problem ${problem.PN}</span>`;
   if (settings.showid)
-    metaHTML += `<span class="badge" style="opacity:0.6;font-family:var(--font-mono);font-size:11px;">${problem.ID}</span>`;
+    metaHTML += `<span class="badge" style="opacity:0.6;font-family:var(--font-mono);font-size:11px;cursor:default;" data-tooltip="${problem.ID}">${problem.ID.slice(0,8)}…</span>`;
   meta.innerHTML = metaHTML;
 
   const html = await renderProblemText(problem.Q);
@@ -3058,10 +3060,27 @@ function updateProbFilter() {
     tip.classList.remove('show');
   }
 
+  function showTipDataAttr(el, e) {
+    const full = el.getAttribute('data-tooltip');
+    if (!full) return;
+    tip.textContent = full;
+    tip.classList.add('show');
+    const x = e.clientX ?? (el.getBoundingClientRect().left + el.offsetWidth / 2);
+    const y = e.clientY ?? (el.getBoundingClientRect().bottom);
+    const tipW = 320, tipH = 40;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    tip.style.left = Math.min(x, vw - tipW - 8) + 'px';
+    tip.style.top = Math.min(y + 10, vh - tipH - 8) + 'px';
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(hideTip, 3000);
+  }
+
   // Delegate from document — catches dynamically rendered rows too
   document.addEventListener('click', e => {
     const cell = e.target.closest('.history-table td, .history-table th');
     if (cell) { showTip(cell, e); return; }
+    const badge = e.target.closest('[data-tooltip]');
+    if (badge) { showTipDataAttr(badge, e); return; }
     hideTip();
   });
   document.addEventListener('touchend', e => {
@@ -3070,6 +3089,19 @@ function updateProbFilter() {
       const t = e.changedTouches[0];
       showTip(cell, { clientX: t.clientX, clientY: t.clientY });
     }
+    const badge = e.target.closest('[data-tooltip]');
+    if (badge) {
+      const t = e.changedTouches[0];
+      showTipDataAttr(badge, { clientX: t.clientX, clientY: t.clientY });
+    }
+  });
+  // Also show on mouseenter for desktop
+  document.addEventListener('mouseover', e => {
+    const badge = e.target.closest('[data-tooltip]');
+    if (badge) showTipDataAttr(badge, e);
+  });
+  document.addEventListener('mouseout', e => {
+    if (e.target.closest('[data-tooltip]')) hideTip();
   });
 })();
 
