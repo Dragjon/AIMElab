@@ -1679,9 +1679,9 @@ async function showQuestion(problem) {
   // Update answer input label based on competition type
   const ansLabel = document.getElementById('answer-input-label');
   if (ansLabel) {
-    ansLabel.textContent = problem.IsAIME ? 'Your Answer (integer 000–999)' : 'Your Answer (A–E letter or numeric value)';
+    ansLabel.textContent = problem.IsAIME ? 'Your Answer (integer 000–999)' : 'Your Answer (A–E)';
   }
-  document.getElementById('answer-input').placeholder = problem.IsAIME ? 'e.g. 42' : 'e.g. B or 6.54';
+  document.getElementById('answer-input').placeholder = problem.IsAIME ? 'e.g. 42' : 'e.g. B';
 
   // ⚠️ wait for render BEFORE continuing
   const html = await renderProblemText(problem.Q);
@@ -1738,27 +1738,26 @@ function showSolutionLink(problem) {
 }
 
 function checkAnswer(userVal, problem) {
-  const correctA = String(problem.A).trim();
-  // For AMC: compare numeric values (answer is numeric like "2", "6.54")
-  // User may enter letter (A-E) for AMC, or the numeric value
   const userStr = String(userVal).trim().toUpperCase();
-  const correctNum = String(correctA).trim();
-  // Check by numeric value
-  const numMatch = parseFloat(userStr) === parseFloat(correctNum);
-  // Check by letter (if problem has a letter answer)
-  const letterMatch = problem.Letter && userStr === String(problem.Letter).trim().toUpperCase();
-  return numMatch || letterMatch;
+  if (problem.IsAIME) {
+    return parseFloat(userStr) === parseFloat(String(problem.A).trim());
+  }
+  // MCQ: letter answer only (A–E)
+  if (!problem.Letter) return false;
+  return userStr === String(problem.Letter).trim().toUpperCase();
 }
 
 function getAnswerLabel(problem) {
   if (problem.IsAIME) return 'Your Answer (integer 000–999)';
-  if (problem.Letter) return `Your Answer (A–E or numeric value, correct letter: shown after submit)`;
-  return 'Your Answer';
+  return 'Your Answer (A–E)';
 }
 
 function submitAnswer() {
   const val = document.getElementById('answer-input').value.trim();
   if (val === '') { alert('Please enter an answer.'); return; }
+  if (!currentProblem.IsAIME && !/^[A-Ea-e]$/.test(val)) {
+    alert('Please enter a letter answer (A–E).'); return;
+  }
   const correctAns = currentProblem.A;
   const correct = checkAnswer(val, currentProblem);
   const displayCorrect = currentProblem.Letter
@@ -2663,11 +2662,11 @@ async function showTestQuestion(idx) {
 
   // Update label and placeholder based on competition type
   const testLabel = document.getElementById('test-answer-input-label');
-  if (testLabel) testLabel.textContent = problem.IsAIME ? 'Your Answer (000–999)' : 'Your Answer (A–E or numeric)';
+  if (testLabel) testLabel.textContent = problem.IsAIME ? 'Your Answer (000–999)' : 'Your Answer (A–E)';
 
   // Restore answer state if already answered
   const input = document.getElementById('test-answer-input');
-  input.placeholder = problem.IsAIME ? 'e.g. 42' : 'e.g. B or 6.54';
+  input.placeholder = problem.IsAIME ? 'e.g. 42' : 'e.g. B';
   const banner = document.getElementById('test-result-banner');
   const displayCorrect = problem.Letter ? `${problem.Letter} (${ans?.correctAnswer||problem.A})` : (ans?.correctAnswer||problem.A);
 
@@ -2702,8 +2701,9 @@ function submitTestAnswer() {
 
   const val = document.getElementById('test-answer-input').value.trim();
   if (val === '') { alert('Please enter an answer.'); return; }
-
-  const problem = testQuestions[idx];
+  if (!problem.IsAIME && !/^[A-Ea-e]$/.test(val)) {
+    alert('Please enter a letter answer (A–E).'); return;
+  }
   const correctAnswer = problem.A;
   const correct = checkAnswer(val, problem);
   const displayCorrect = problem.Letter ? `${problem.Letter} (${correctAnswer})` : correctAnswer;
@@ -2927,9 +2927,11 @@ async function init() {
 
     problems = deduped.map(r => {
       // Extract year and competition from link
-      const linkMatch = r.link && r.link.match(/(\d{4})_(AMC_8|AMC_10[AB]?|AMC_12[AB]?|AIME_II|AIME_I|AIME)_Problems/);
+      const linkMatch = r.link && r.link.match(
+        /(\d{4})_(Fall_AMC_12[AB]|Fall_AMC_10[AB]|AMC_12[ABP]?|AMC_10[AB]?|AMC_8|AIME_II|AIME_I|AIME|AJHSME|AHSME|USAJMO|USAMO|USOJMO|USOMO)_Problems/
+      );
       const year = linkMatch ? linkMatch[1] : '';
-      const comp = linkMatch ? linkMatch[2].replace(/_/g, ' ') : 'AIME';
+      const comp = linkMatch ? linkMatch[2].replace(/_/g, ' ') : '';
       // Determine if AIME-type (integer answer) or AMC-type (letter answer)
       const isAIME = comp.startsWith('AIME');
       // Problem number from link
@@ -2959,7 +2961,13 @@ async function init() {
 
   // Populate competition dropdowns
   const comps = [...new Set(problems.map(p => p.Comp))].filter(Boolean).sort();
-  const compOrder = ['AIME', 'AIME I', 'AIME II', 'AMC 8', 'AMC 10', 'AMC 10A', 'AMC 10B', 'AMC 12', 'AMC 12A', 'AMC 12B'];
+  const compOrder = [
+    'AIME', 'AIME I', 'AIME II',
+    'AMC 8', 'AMC 10', 'AMC 10A', 'AMC 10B', 'AMC 12', 'AMC 12A', 'AMC 12B', 'AMC 12P',
+    'AJHSME', 'AHSME',
+    'Fall AMC 10A', 'Fall AMC 10B', 'Fall AMC 12A', 'Fall AMC 12B',
+    'USAJMO', 'USAMO', 'USOJMO', 'USOMO'
+  ];
   const sortedComps = [...compOrder.filter(c => comps.includes(c)), ...comps.filter(c => !compOrder.includes(c))];
 
   // Practice competition filter
