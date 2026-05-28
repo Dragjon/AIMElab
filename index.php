@@ -1,3 +1,27 @@
+<?php
+// ============================================================
+// index.php  — AIMElab with PHP auth + MySQL persistence
+// ============================================================
+require_once __DIR__ . '/includes/db.php';
+
+$user = current_user();
+
+// Redirect unauthenticated users to auth page
+$auth_mode = $_GET['auth'] ?? '';
+if (!$user && !in_array($auth_mode, ['login','register'])) {
+    header('Location: index.php?auth=login');
+    exit;
+}
+
+// If logged-in user hits auth page → redirect home
+if ($user && in_array($auth_mode, ['login','register'])) {
+    header('Location: index.php');
+    exit;
+}
+
+// Pre-load settings for logged-in user
+$settings = $user ? get_settings((int)$user['id']) : [];
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,16 +43,12 @@ window.MathJax = {
 };
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.min.js"></script>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
 <style>
 /* ===== FONTS ===== */
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap');
-
-/* ===== CSS VARIABLES / THEMES ===== */
 :root {
   --bg: #0d0f14;
   --bg2: #141720;
@@ -325,7 +345,7 @@ body {
 .btn-sm { padding: 6px 14px; font-size: 13px; }
 
 /* ===== FORM ELEMENTS ===== */
-select, input[type="number"], input[type="text"] {
+select, input[type="number"], input[type="text"], input[type="password"], input[type="email"] {
   background: var(--bg3); border: 1px solid var(--border);
   color: var(--text); border-radius: var(--radius-sm);
   padding: 10px 14px; font-family: var(--font-body); font-size: 14px;
@@ -799,9 +819,355 @@ input:checked + .slider::before { transform: translateX(20px); }
   to { transform: rotate(360deg); }
 }
 
+/* ===== AUTH MODAL ===== */
+.auth-overlay {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999; padding: 20px;
+}
+.auth-box {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 40px;
+  width: 100%; max-width: 440px; box-shadow: var(--shadow);
+  animation: fadeIn 0.3s ease;
+}
+.auth-logo {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 32px; justify-content: center;
+}
+.auth-logo .logo-icon { width: 44px; height: 44px; border-radius: 12px; font-size: 22px; }
+.auth-logo .logo-text { font-family: var(--font-display); font-size: 26px; }
+.auth-title { font-family: var(--font-display); font-size: 1.6rem; color: var(--text); margin-bottom: 6px; text-align: center; }
+.auth-sub { color: var(--text3); font-size: 13px; text-align: center; margin-bottom: 28px; }
+.auth-input {
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+  border-radius: var(--radius-sm); padding: 12px 16px;
+  font-family: var(--font-body); font-size: 15px; width: 100%;
+  outline: none; transition: border-color var(--transition); margin-bottom: 14px; display: block;
+}
+.auth-input:focus { border-color: var(--accent); }
+.auth-btn {
+  width: 100%; padding: 13px; border-radius: var(--radius-sm);
+  background: var(--accent); color: #fff; font-family: var(--font-body); font-size: 15px;
+  font-weight: 700; border: none; cursor: pointer; transition: all var(--transition);
+  margin-top: 4px; box-shadow: 0 0 20px var(--accent-glow);
+}
+.auth-btn:hover { filter: brightness(1.12); }
+.auth-switch { text-align: center; margin-top: 20px; font-size: 13px; color: var(--text3); }
+.auth-switch a { color: var(--accent); text-decoration: none; cursor: pointer; }
+.auth-switch a:hover { text-decoration: underline; }
+.auth-error {
+  background: rgba(248,113,113,0.1); border: 1px solid var(--wrong); color: var(--wrong);
+  border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px;
+  margin-bottom: 14px; display: none;
+}
+.auth-error.show { display: block; }
+
+/* ===== PROFILE PAGE ===== */
+.profile-avatar {
+  width: 80px; height: 80px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; flex-shrink: 0;
+}
+.avatar-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.avatar-color-btn {
+  width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.avatar-color-btn.active, .avatar-color-btn:hover { border-color: var(--text); transform: scale(1.15); }
+.avatar-emoji-btn {
+  width: 36px; height: 36px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  background: var(--bg3); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition);
+}
+.avatar-emoji-btn.active, .avatar-emoji-btn:hover { border-color: var(--accent); background: var(--accent-glow); }
+
+/* ===== PROFILE CARD ===== */
+.profile-banner {
+  position: relative; height: 140px; border-radius: var(--radius) var(--radius) 0 0;
+  overflow: hidden; flex-shrink: 0;
+}
+.profile-banner-inner {
+  width: 100%; height: 100%;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  opacity: 0.25;
+}
+.profile-banner-pattern {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle at 20% 50%, var(--accent) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 20%, var(--accent2) 0%, transparent 40%);
+  opacity: 0.3;
+}
+.profile-card-body {
+  padding: 0 28px 28px; position: relative;
+}
+.profile-avatar-large {
+  width: 88px; height: 88px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px; flex-shrink: 0;
+  border: 4px solid var(--bg2);
+  margin-top: -44px; margin-bottom: 14px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  position: relative; z-index: 1;
+}
+.profile-username {
+  font-family: var(--font-display); font-size: 1.6rem; color: var(--text); line-height: 1.1;
+}
+.profile-handle { font-size: 13px; color: var(--text3); margin-top: 3px; font-family: var(--font-mono); }
+.profile-bio-text {
+  font-size: 14px; color: var(--text2); margin-top: 12px; line-height: 1.7;
+  max-width: 540px;
+}
+.profile-meta-row {
+  display: flex; flex-wrap: wrap; gap: 18px; margin-top: 16px;
+}
+.profile-meta-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text3);
+}
+.profile-meta-item svg { flex-shrink: 0; }
+.profile-stats-row {
+  display: flex; gap: 28px; margin-top: 20px; flex-wrap: wrap;
+}
+.profile-stat {
+  text-align: center;
+}
+.profile-stat-value {
+  font-family: var(--font-display); font-size: 1.5rem; color: var(--text); line-height: 1;
+}
+.profile-stat-label {
+  font-size: 11px; color: var(--text3); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
+}
+.profile-divider { width: 1px; background: var(--border); align-self: stretch; }
+.profile-section-title {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text3);
+  font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+}
+.profile-comp-bar-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+}
+.profile-comp-label { font-size: 12px; color: var(--text2); width: 80px; flex-shrink: 0; font-weight: 500; }
+.profile-comp-bar-bg { flex: 1; height: 6px; background: var(--bg4); border-radius: 3px; overflow: hidden; }
+.profile-comp-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.6s ease; }
+.profile-comp-pct { font-size: 11px; color: var(--text3); width: 32px; text-align: right; font-family: var(--font-mono); }
+.profile-badge-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.profile-achievement {
+  display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+  background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 12px; color: var(--text2);
+}
+.profile-achievement.earned { border-color: var(--accent); background: var(--accent-glow); color: var(--text); }
+.profile-achievement.earned .ach-icon { filter: none; }
+.ach-icon { font-size: 20px; filter: grayscale(1) opacity(0.4); }
+.profile-achievement.earned .ach-icon { filter: none; }
+.ach-info { display: flex; flex-direction: column; }
+.ach-name { font-weight: 600; font-size: 12px; }
+.ach-desc { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.profile-heatmap {
+  display: grid; grid-template-columns: repeat(26, 1fr); gap: 3px;
+}
+.heatmap-cell {
+  aspect-ratio: 1; border-radius: 2px; background: var(--bg4);
+  transition: background 0.2s;
+}
+.heatmap-cell[data-count="1"] { background: color-mix(in srgb, var(--accent) 30%, var(--bg4)); }
+.heatmap-cell[data-count="2"] { background: color-mix(in srgb, var(--accent) 55%, var(--bg4)); }
+.heatmap-cell[data-count="3"] { background: color-mix(in srgb, var(--accent) 75%, var(--bg4)); }
+.heatmap-cell[data-count="4"] { background: var(--accent); }
+@supports not (color: color-mix(in srgb, red 50%, blue)) {
+  .heatmap-cell[data-count="1"] { background: rgba(108,142,245,0.25); }
+  .heatmap-cell[data-count="2"] { background: rgba(108,142,245,0.5); }
+  .heatmap-cell[data-count="3"] { background: rgba(108,142,245,0.75); }
+  .heatmap-cell[data-count="4"] { background: var(--accent); }
+}
+@media (max-width: 700px) {
+  .profile-banner { height: 100px; }
+  .profile-card-body { padding: 0 16px 20px; }
+  .profile-avatar-large { width: 70px; height: 70px; font-size: 28px; margin-top: -35px; }
+  .profile-stats-row { gap: 16px; }
+  .profile-heatmap { grid-template-columns: repeat(18, 1fr); }
+}
+
+/* ===== BANNER DESIGNER ===== */
+.banner-style-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.banner-style-btn {
+  width: 72px; height: 40px; border-radius: var(--radius-sm);
+  border: 2px solid var(--border); cursor: pointer; overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s; position: relative;
+}
+.banner-style-btn:hover { border-color: var(--text2); transform: scale(1.05); }
+.banner-style-btn.active { border-color: var(--accent); }
+.banner-style-btn span {
+  position: absolute; bottom: 3px; left: 0; right: 0;
+  text-align: center; font-size: 9px; color: rgba(255,255,255,0.85);
+  font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.5); letter-spacing: 0.04em;
+}
+.color-pair { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.color-pair label { font-size: 12px; color: var(--text3); white-space: nowrap; }
+.color-input-wrap { position: relative; display: flex; align-items: center; gap: 6px; }
+.color-swatch {
+  width: 28px; height: 28px; border-radius: 6px; border: 2px solid var(--border);
+  cursor: pointer; flex-shrink: 0; transition: border-color 0.2s;
+}
+.color-swatch:hover { border-color: var(--text2); }
+input[type="color"] { position: absolute; opacity: 0; width: 28px; height: 28px; cursor: pointer; }
+.angle-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.angle-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+.angle-row span { font-size: 12px; color: var(--text3); font-family: var(--font-mono); width: 36px; }
+.banner-preview {
+  width: 100%; height: 80px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); margin-bottom: 12px; overflow: hidden;
+  position: relative;
+}
+
+/* ===== AVATAR UPLOAD ===== */
+.avatar-upload-zone {
+  position: relative; width: 88px; height: 88px; flex-shrink: 0; cursor: pointer;
+}
+
+.avatar-upload-overlay {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.2s;
+}
+.avatar-upload-zone:hover .avatar-upload-overlay { opacity: 1; }
+.avatar-upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; border-radius: 50%; }
+.avatar-edit-badge {
+  position: absolute; bottom: 2px; right: 2px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--bg2);
+  display: flex; align-items: center; justify-content: center;
+}
+
+.avatar-edit-badge {
+    z-index:999;
+}
+
+/* ===== USER CHIP ===== */
+.user-chip {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+  border-radius: var(--radius-sm); cursor: pointer; transition: background var(--transition);
+  position: relative; user-select: none;
+}
+.user-chip:hover { background: var(--bg3); }
+.user-chip-avatar {
+  width: 28px; height: 28px; border-radius: 50%; font-size: 13px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.user-chip-name { font-size: 13px; color: var(--text2); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+.user-menu {
+  position: absolute; bottom: calc(100% + 6px); left: 0; right: 0;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 4px;
+  box-shadow: var(--shadow); display: none; z-index: 100; min-width: 160px;
+}
+.user-menu.open { display: block; }
+.user-menu-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 6px; cursor: pointer;
+  font-size: 13px; color: var(--text2); transition: all var(--transition);
+}
+.user-menu-item:hover { background: var(--bg3); color: var(--text); }
+.user-menu-item.danger { color: var(--wrong); }
+
+/* ===== ADMIN PANEL ===== */
+.admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.admin-table th, .admin-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+.admin-table th { color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; }
+.admin-table tr:hover td { background: var(--bg3); }
+.role-badge { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.role-badge.admin { background: rgba(108,142,245,0.2); color: var(--accent); }
+.role-badge.user { background: var(--bg4); color: var(--text3); }
 </style>
 </head>
 <body>
+<?php if (!$user): ?>
+<!-- ===== AUTH OVERLAY ===== -->
+<div class="auth-overlay" id="auth-overlay" data-theme="dark">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="logo-icon" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#6c8ef5,#a78bfa);display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:22px;color:#fff;">∑</div>
+      <div class="logo-text" style="font-family:'DM Serif Display',serif;font-size:26px;">AIME<span style="color:#6c8ef5;">lab</span></div>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="login-form">
+      <div class="auth-title">Welcome back</div>
+      <div class="auth-sub">Sign in to your account to continue</div>
+      <div class="auth-error" id="login-error"></div>
+      <input class="auth-input" type="text" id="login-user" placeholder="Username or email" autocomplete="username"/>
+      <input class="auth-input" type="password" id="login-pass" placeholder="Password" autocomplete="current-password"/>
+      <button class="auth-btn" id="login-btn">Sign In</button>
+      <div class="auth-switch">Don't have an account? <a onclick="showRegister()">Create one →</a></div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="register-form" style="display:none;">
+      <div class="auth-title">Create account</div>
+      <div class="auth-sub">Start tracking your progress today</div>
+      <div class="auth-error" id="register-error"></div>
+      <input class="auth-input" type="text" id="reg-username" placeholder="Username (3–32 chars, no spaces)" autocomplete="username"/>
+      <input class="auth-input" type="email" id="reg-email" placeholder="Email address" autocomplete="email"/>
+      <input class="auth-input" type="password" id="reg-pass" placeholder="Password (8+ characters)" autocomplete="new-password"/>
+      <button class="auth-btn" id="register-btn">Create Account</button>
+      <div class="auth-switch">Already have an account? <a onclick="showLogin()">Sign in →</a></div>
+    </div>
+  </div>
+</div>
+<script>
+// Minimal auth JS (runs before app init)
+function showLogin() {
+  document.getElementById('login-form').style.display = '';
+  document.getElementById('register-form').style.display = 'none';
+}
+function showRegister() {
+  document.getElementById('login-form').style.display = 'none';
+  document.getElementById('register-form').style.display = '';
+}
+<?php if ($auth_mode === 'register'): ?>showRegister();<?php endif; ?>
+
+async function authPost(action, body) {
+  const r = await fetch('api/api.php?action=' + action, {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+  });
+  return r.json();
+}
+
+document.getElementById('login-btn').addEventListener('click', async () => {
+  const err = document.getElementById('login-error');
+  err.classList.remove('show');
+  const res = await authPost('login', {
+    login: document.getElementById('login-user').value,
+    password: document.getElementById('login-pass').value
+  });
+  if (res.ok) { location.href = 'index.php'; }
+  else { err.textContent = (res.errors||['Login failed']).join(' '); err.classList.add('show'); }
+});
+document.getElementById('register-btn').addEventListener('click', async () => {
+  const err = document.getElementById('register-error');
+  err.classList.remove('show');
+  const res = await authPost('register', {
+    username: document.getElementById('reg-username').value,
+    email: document.getElementById('reg-email').value,
+    password: document.getElementById('reg-pass').value
+  });
+  if (res.ok) { location.href = 'index.php'; }
+  else { err.textContent = (res.errors||['Registration failed']).join(' '); err.classList.add('show'); }
+});
+['login-user','login-pass','reg-username','reg-email','reg-pass'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const btn = document.getElementById('login-form').style.display !== 'none'
+        ? document.getElementById('login-btn')
+        : document.getElementById('register-btn');
+      btn.click();
+    }
+  });
+});
+</script>
+</body>
+</html>
+<?php exit; endif; // End unauthenticated block ?>
 
 <div id="loading-overlay">
   <div class="loader"></div>
@@ -840,23 +1206,45 @@ input:checked + .slider::before { transform: translateX(20px); }
       <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
       <span>Tests</span>
     </div>
+    <div class="nav-item" data-page="profile">
+      <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+      <span>Profile</span>
+    </div>
     <div class="nav-item" data-page="settings">
       <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
       <span>Settings</span>
     </div>
+    <?php if ($user['role'] === 'admin'): ?>
+    <div class="nav-item" data-page="admin">
+      <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+      <span>Admin</span>
+    </div>
+    <?php endif; ?>
   </div>
   <div class="sidebar-footer">
     <a href="https://github.com/Dragjon/AIMElab" target="_blank" rel="noopener" class="nav-item" style="text-decoration:none;">
       <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg></span>
       <span>GitHub</span>
     </a>
+    <!-- User chip -->
+    <div class="user-chip" id="user-chip-btn">
+      <div class="user-chip-avatar" id="sidebar-avatar" style="background:<?= htmlspecialchars($user['avatar_color']) ?>;"><?= htmlspecialchars($user['avatar_emoji']) ?></div>
+      <div class="user-chip-name"><?= htmlspecialchars($user['display_name'] ?: $user['username']) ?></div>
+      <div class="user-menu" id="user-menu">
+        <div class="user-menu-item" onclick="navigate('profile')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Profile
+        </div>
+        <div class="user-menu-item danger" id="logout-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Sign Out
+        </div>
+      </div>
+    </div>
     <div class="nav-item" id="reset-progress-btn" style="color: var(--wrong);">
       <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></span>
       <span>Reset Data</span>
     </div>
   </div>
 </nav>
-
 <!-- Mobile bottom navigation -->
 <nav id="mobile-nav">
   <div class="mobile-nav-inner">
@@ -905,7 +1293,6 @@ input:checked + .slider::before { transform: translateX(20px); }
 </div>
 
 <main id="main">
-
   <div class="page active" id="page-home">
     <div class="page-header">
       <div class="page-title">Welcome back <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-5px;color:var(--accent)"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg></div>
@@ -1372,6 +1759,291 @@ input:checked + .slider::before { transform: translateX(20px); }
     </div>
   </div>
 
+  <!-- ===== PROFILE PAGE ===== -->
+  <div class="page" id="page-profile">
+
+    <!-- ══ PUBLIC PROFILE CARD ══ -->
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:20px;" id="profile-card-view">
+      <div class="profile-banner">
+        <div class="profile-banner-inner"></div>
+        <div class="profile-banner-pattern"></div>
+      </div>
+      <div class="profile-card-body">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+          <div>
+            <div class="profile-avatar-large" id="profile-preview-avatar" style="background:<?= htmlspecialchars($user['avatar_color']) ?>;"><?= htmlspecialchars($user['avatar_emoji']) ?></div>
+            <div class="profile-username" id="profile-view-name"><?= htmlspecialchars($user['display_name'] ?: $user['username']) ?></div>
+            <div class="profile-handle">@<?= htmlspecialchars($user['username']) ?><?php if($user['role']==='admin'): ?> <span style="color:var(--accent);font-family:var(--font-body);font-weight:700;">· Admin</span><?php endif; ?></div>
+            <div class="profile-bio-text" id="profile-view-bio"><?= nl2br(htmlspecialchars($user['bio'] ?? '')) ?: '<span style="color:var(--text3);font-style:italic;">No bio yet.</span>' ?></div>
+            <div class="profile-meta-row">
+              <div class="profile-meta-item">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Joined <?= date('M Y', strtotime($user['created_at'])) ?>
+              </div>
+              <div class="profile-meta-item" id="profile-meta-streak">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c0 0-4 4-4 9a4 4 0 0 0 8 0c0-5-4-9-4-9z"/><path d="M12 11c0 0-2 2-2 4a2 2 0 0 0 4 0c0-2-2-4-2-4z" fill="currentColor"/></svg>
+                <span id="profile-streak-val">—</span> day streak
+              </div>
+            </div>
+          </div>
+          <div class="flex-row" style="margin-top:8px;flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm" id="profile-edit-toggle">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              Edit Profile
+            </button>
+            <button class="btn btn-secondary btn-sm" id="share-profile-btn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              <span id="share-profile-btn-text">Share Profile</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats row -->
+        <div class="profile-stats-row" id="profile-stats-row">
+          <div class="profile-stat">
+            <div class="profile-stat-value" id="pstat-attempts">—</div>
+            <div class="profile-stat-label">Attempts</div>
+          </div>
+          <div class="profile-divider"></div>
+          <div class="profile-stat">
+            <div class="profile-stat-value" id="pstat-correct">—</div>
+            <div class="profile-stat-label">Correct</div>
+          </div>
+          <div class="profile-divider"></div>
+          <div class="profile-stat">
+            <div class="profile-stat-value" id="pstat-acc">—%</div>
+            <div class="profile-stat-label">Accuracy</div>
+          </div>
+          <div class="profile-divider"></div>
+          <div class="profile-stat">
+            <div class="profile-stat-value" id="pstat-unique">—</div>
+            <div class="profile-stat-label">Unique Problems</div>
+          </div>
+          <div class="profile-divider"></div>
+          <div class="profile-stat">
+            <div class="profile-stat-value" id="pstat-tests">—</div>
+            <div class="profile-stat-label">Tests Taken</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ACTIVITY HEATMAP ══ -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="profile-section-title">Activity — Last 26 Weeks</div>
+      <div class="profile-heatmap" id="profile-heatmap"></div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:11px;color:var(--text3);">
+        Less
+        <div style="width:10px;height:10px;border-radius:2px;background:var(--bg4);"></div>
+        <div style="width:10px;height:10px;border-radius:2px;" class="heatmap-cell" data-count="1"></div>
+        <div style="width:10px;height:10px;border-radius:2px;" class="heatmap-cell" data-count="2"></div>
+        <div style="width:10px;height:10px;border-radius:2px;" class="heatmap-cell" data-count="3"></div>
+        <div style="width:10px;height:10px;border-radius:2px;" class="heatmap-cell" data-count="4"></div>
+        More
+      </div>
+    </div>
+
+    <!-- ══ ACCURACY BY COMPETITION ══ -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+      <div class="card">
+        <div class="profile-section-title">Accuracy by Competition</div>
+        <div id="profile-comp-bars"></div>
+      </div>
+      <div class="card">
+        <div class="profile-section-title">Achievements</div>
+        <div class="profile-badge-row" id="profile-achievements"></div>
+      </div>
+    </div>
+
+    <!-- ══ EDIT FORM (hidden by default) ══ -->
+    <div id="profile-edit-section" style="display:none;">
+      <div class="card" style="margin-bottom:16px;overflow:visible;">
+        <div class="profile-section-title" style="padding:20px 24px 0;">Edit Profile</div>
+
+        <!-- Banner Preview -->
+        <div style="padding:16px 24px 0;">
+          <label style="font-size:13px;color:var(--text2);font-weight:500;display:block;margin-bottom:8px;">Banner Preview</label>
+          <div class="banner-preview" id="banner-preview-box"></div>
+        </div>
+
+        <!-- Banner Style -->
+        <div style="padding:0 24px;">
+          <div class="form-group">
+            <label>Banner Style</label>
+            <div class="banner-style-picker" id="banner-style-picker">
+              <?php
+              $bstyles = ['gradient'=>'Gradient','solid'=>'Solid','mesh'=>'Mesh','wave'=>'Wave','dots'=>'Dots','none'=>'None'];
+              $cur_bs  = $user['banner_style'] ?? 'gradient';
+              $bc1     = $user['banner_color1'] ?? '#6c8ef5';
+              $bc2     = $user['banner_color2'] ?? '#a78bfa';
+              foreach ($bstyles as $val => $label):
+              ?>
+              <div class="banner-style-btn <?= $cur_bs===$val?'active':'' ?>" data-style="<?= $val ?>"
+                   style="background:linear-gradient(135deg,<?= $bc1 ?>,<?= $bc2 ?>);">
+                <span><?= $label ?></span>
+              </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Banner Colours</label>
+            <div class="color-pair">
+              <div class="color-input-wrap">
+                <div class="color-swatch" id="bc1-swatch" style="background:<?= htmlspecialchars($bc1) ?>;"></div>
+                <input type="color" id="banner-color1" value="<?= htmlspecialchars($bc1) ?>"/>
+                <span style="font-size:12px;color:var(--text3);">Primary</span>
+              </div>
+              <div class="color-input-wrap">
+                <div class="color-swatch" id="bc2-swatch" style="background:<?= htmlspecialchars($bc2) ?>;"></div>
+                <input type="color" id="banner-color2" value="<?= htmlspecialchars($bc2) ?>"/>
+                <span style="font-size:12px;color:var(--text3);">Secondary</span>
+              </div>
+            </div>
+            <div class="angle-row" id="banner-angle-row">
+              <span style="font-size:12px;color:var(--text3);">Angle</span>
+              <input type="range" id="banner-angle" min="0" max="360" value="<?= (int)($user['banner_angle'] ?? 135) ?>"/>
+              <span id="banner-angle-val"><?= (int)($user['banner_angle'] ?? 135) ?>°</span>
+            </div>
+          </div>
+        </div>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:4px 0 16px;">
+
+        <!-- Avatar + basic info -->
+        <div style="padding:0 24px 24px;display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+        
+
+          <!-- Avatar upload -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+            <div class="avatar-upload-zone" id="auz">
+              <div class="profile-avatar-large" id="edit-avatar-preview"
+                   style="background:<?= htmlspecialchars($user['avatar_color']) ?>;margin-top:0;border:3px solid var(--border);">
+                <?php if (!empty($user['avatar_url'])): ?>
+                  <img src="<?= htmlspecialchars($user['avatar_url']) ?>?v=<?= time() ?>" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" id="avatar-img-preview"/>
+                <?php else: ?>
+                  <span id="avatar-emoji-display"><?= htmlspecialchars($user['avatar_emoji']) ?></span>
+                <?php endif; ?>
+              </div>
+              <div class="avatar-upload-overlay">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </div>
+              <div class="avatar-edit-badge">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              </div>
+              <input
+                  type="file"
+                  id="avatar-upload-input"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  style="
+                    position:absolute;
+                    width:1px;
+                    height:1px;
+                    opacity:0;
+                    pointer-events:none;
+                  "
+                >
+            </div>
+            <span style="font-size:11px;color:var(--text3);text-align:center;">JPG/PNG/WebP<br>Max 2 MB</span>
+            <button class="btn btn-secondary btn-sm" id="delete-avatar-btn" style="font-size:11px;<?= empty($user['avatar_url'])?'display:none;':'' ?>">Remove Photo</button>
+          </div>
+
+          <div style="flex:1;min-width:240px;">
+            <div class="form-group">
+              <label>Display Name</label>
+              <input type="text" id="profile-display-name" value="<?= htmlspecialchars($user['display_name']) ?>" placeholder="Your display name" maxlength="64"/>
+            </div>
+            <div class="form-group">
+              <label>Bio <span style="color:var(--text3);font-size:11px;">(max 500 chars)</span></label>
+              <textarea id="profile-bio" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);padding:10px 14px;font-family:var(--font-body);font-size:14px;outline:none;width:100%;min-height:80px;resize:vertical;" maxlength="500" placeholder="Tell the world about yourself..."><?= htmlspecialchars($user['bio'] ?? '') ?></textarea>
+            </div>
+            <div class="form-group">
+              <label>Avatar Colour <span style="color:var(--text3);font-size:11px;">(shown when no photo)</span></label>
+              <div class="avatar-picker" id="avatar-color-picker">
+                <?php foreach (['#6c8ef5','#a78bfa','#34d399','#f87171','#fbbf24','#38bdf8','#f472b6','#fb923c','#e879f9','#4ade80','#22d3ee','#818cf8'] as $c): ?>
+                <div class="avatar-color-btn <?= $user['avatar_color']===$c?'active':'' ?>" data-color="<?= $c ?>" style="background:<?= $c ?>;"></div>
+                <?php endforeach; ?>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Avatar Symbol <span style="color:var(--text3);font-size:11px;">(shown when no photo)</span></label>
+              <div class="avatar-picker" id="avatar-emoji-picker">
+                <?php foreach (['∑','π','√','∞','∫','Δ','θ','λ','φ','ψ','Ω','α','β','γ','μ','σ','🔢','📐','🧮','⭐'] as $e): ?>
+                <div class="avatar-emoji-btn <?= $user['avatar_emoji']===$e?'active':'' ?>" data-emoji="<?= htmlspecialchars($e) ?>"><?= htmlspecialchars($e) ?></div>
+                <?php endforeach; ?>
+              </div>
+            </div>
+            <div class="flex-row">
+              <button class="btn btn-primary" id="save-profile-btn">Save Changes</button>
+              <button class="btn btn-secondary" id="profile-cancel-btn">Cancel</button>
+              <span id="profile-save-msg" style="display:none;color:var(--correct);font-size:13px;">✓ Saved!</span>
+            </div>
+            <div id="avatar-upload-progress" style="display:none;margin-top:10px;">
+              <div style="background:var(--bg4);border-radius:4px;height:4px;overflow:hidden;">
+                <div id="avatar-upload-bar" style="height:100%;width:0%;background:var(--accent);transition:width 0.3s;border-radius:4px;"></div>
+              </div>
+              <p style="font-size:11px;color:var(--text3);margin-top:4px;" id="avatar-upload-status">Uploading…</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card settings-section">
+        <div class="settings-title">Account Info</div>
+        <div class="setting-row">
+          <div class="setting-info"><div class="setting-name">Username</div><div class="setting-desc"><?= htmlspecialchars($user['username']) ?></div></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info"><div class="setting-name">Email</div><div class="setting-desc"><?= htmlspecialchars($user['email']) ?></div></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info"><div class="setting-name">Member Since</div><div class="setting-desc"><?= date('F j, Y', strtotime($user['created_at'])) ?></div></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info"><div class="setting-name">Role</div><div class="setting-desc" style="text-transform:capitalize;"><?= htmlspecialchars($user['role']) ?></div></div>
+        </div>
+      </div>
+
+      <div class="card settings-section" style="margin-top:16px;">
+        <div class="settings-title">Change Password</div>
+        <div id="pw-error" class="auth-error" style="margin-bottom:14px;"></div>
+        <div class="form-group"><label>Current Password</label><input type="password" id="pw-current" placeholder="Your current password"/></div>
+        <div class="form-group"><label>New Password</label><input type="password" id="pw-new" placeholder="At least 8 characters"/></div>
+        <button class="btn btn-secondary" id="change-pw-btn">Update Password</button>
+        <span id="pw-save-msg" style="display:none;margin-left:12px;color:var(--correct);font-size:13px;">Password updated!</span>
+      </div>
+    </div>
+
+  </div>
+
+  <?php if ($user['role'] === 'admin'): ?>
+  <!-- ===== ADMIN PAGE ===== -->
+  <div class="page" id="page-admin">
+    <div class="page-header">
+      <div class="page-title">Admin Panel</div>
+      <div class="page-subtitle">Manage users and view platform statistics.</div>
+    </div>
+    <div class="stats-grid" id="admin-stats-grid"></div>
+    <div class="card">
+      <div class="flex-between" style="margin-bottom:16px;">
+        <div class="card-title" style="margin:0;">All Users</div>
+        <input type="text" id="admin-search" placeholder="Search users…" autocomplete="off" style="width:200px;padding:8px 12px;font-size:13px;"/>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Username</th><th>Email</th><th>Display Name</th>
+              <th>Role</th><th>Attempts</th><th>Joined</th><th>Last Login</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="admin-users-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <?php endif; ?>
+
 </main>
 </div>
 
@@ -1379,7 +2051,38 @@ input:checked + .slider::before { transform: translateX(20px); }
 
 <script>
 // ============================================================
-// DATA & STATE
+// PHP-INJECTED USER DATA
+// ============================================================
+const CURRENT_USER = <?= json_encode([
+  'id'            => (int)$user['id'],
+  'username'      => $user['username'],
+  'display_name'  => $user['display_name'] ?? '',
+  'bio'           => $user['bio'] ?? '',
+  'avatar_color'  => $user['avatar_color']  ?? '#6c8ef5',
+  'avatar_emoji'  => $user['avatar_emoji']  ?? '∑',
+  'avatar_url'    => $user['avatar_url']    ?? null,
+  'banner_style'  => $user['banner_style']  ?? 'gradient',
+  'banner_color1' => $user['banner_color1'] ?? '#6c8ef5',
+  'banner_color2' => $user['banner_color2'] ?? '#a78bfa',
+  'banner_angle'  => (int)($user['banner_angle'] ?? 135),
+  'role'          => $user['role'],
+], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?>;
+
+const INITIAL_SETTINGS = <?= json_encode($settings ?: (object)[], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+
+// ============================================================
+// API HELPER
+// ============================================================
+async function api(action, body = null) {
+  const opts = { method: body ? 'POST' : 'GET', headers: {} };
+  if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+  const r = await fetch('api/api.php?action=' + action, opts);
+  if (r.status === 401) { location.href = 'index.php?auth=login'; return null; }
+  return r.json();
+}
+
+// ============================================================
+// DATA & STATE (DB-backed)
 // ============================================================
 let problems = [];
 let filteredPool = [];
@@ -1388,86 +2091,74 @@ let currentProblem = null;
 let sessionIndex = 0;
 let charts = {};
 
-// localStorage keys
-const LS = {
-  attempts: 'aimelab_attempts',   // { [id]: { correct: bool, answer: int, date: str, count: int }[] }
-  settings: 'aimelab_settings',
-  tests: 'aimelab_tests',         // [ { date, score, total, results: [{pn, id, correct, userAnswer, correctAnswer}] } ]
-};
+// In-memory cache of attempts (refreshed from DB on load)
+let _attemptsCache = null;
+let _testsCache = null;
 
-function loadAttempts() {
-  try { return JSON.parse(localStorage.getItem(LS.attempts) || '{}'); } catch { return {}; }
+async function loadAttempts() {
+  if (_attemptsCache !== null) return _attemptsCache;
+  const data = await api('get_attempts');
+  _attemptsCache = data || {};
+  return _attemptsCache;
 }
-function saveAttempts(a) { localStorage.setItem(LS.attempts, JSON.stringify(a)); }
+
+async function saveAttempts() { /* handled server-side per attempt */ }
 
 function loadSettings() {
-  const defaults = {
-    theme: 'dark', fontSize: 'medium',
-    autoadvance: false, showid: true, confirmSkip: false,
-    hcontrast: false, reducemotion: false, largetargets: false
+  return { ...INITIAL_SETTINGS };
+}
+async function saveSettings(s) {
+  // Map JS keys → PHP keys
+  const mapped = {
+    theme: s.theme, font_size: s.fontSize,
+    autoadvance: s.autoadvance ? 1 : 0,
+    showid: s.showid ? 1 : 0,
+    confirm_skip: s.confirmSkip ? 1 : 0,
+    hcontrast: s.hcontrast ? 1 : 0,
+    reducemotion: s.reducemotion ? 1 : 0,
+    largetargets: s.largetargets ? 1 : 0
   };
-  try { return { ...defaults, ...JSON.parse(localStorage.getItem(LS.settings) || '{}') }; } catch { return defaults; }
-}
-function saveSettings(s) { localStorage.setItem(LS.settings, JSON.stringify(s)); }
-
-function loadTests() {
-  try { return JSON.parse(localStorage.getItem(LS.tests) || '[]'); } catch { return []; }
-}
-function saveTests(t) { localStorage.setItem(LS.tests, JSON.stringify(t)); }
-
-function recordTest(score, total, results) {
-  const t = loadTests();
-  t.push({ date: new Date().toISOString(), score, total, results });
-  saveTests(t);
+  await api('save_settings', mapped);
+  Object.assign(INITIAL_SETTINGS, s);
 }
 
-function recordAttempt(id, correct, userAnswer, correctAnswer) {
-  const a = loadAttempts();
-  if (!a[id]) a[id] = [];
-  a[id].push({ correct, userAnswer, correctAnswer, date: new Date().toISOString() });
-  saveAttempts(a);
+async function loadTests() {
+  if (_testsCache !== null) return _testsCache;
+  const data = await api('get_tests');
+  _testsCache = data || [];
+  return _testsCache;
+}
+
+async function recordTest(score, total, results) {
+  const res = await api('add_test', { score, total, results });
+  if (res?.ok) _testsCache = null; // invalidate
+}
+
+async function recordAttempt(id, correct, userAnswer, correctAnswer) {
+  const res = await api('add_attempt', {
+    problem_id: id, correct, userAnswer, correctAnswer
+  });
+  if (res?.ok && _attemptsCache) {
+    if (!_attemptsCache[id]) _attemptsCache[id] = [];
+    _attemptsCache[id].push({ correct, userAnswer, correctAnswer, date: new Date().toISOString() });
+  }
 }
 
 function getLastAttempt(id) {
-  const a = loadAttempts();
-  const arr = a[id];
+  if (!_attemptsCache) return null;
+  const arr = _attemptsCache[id];
   return arr && arr.length ? arr[arr.length - 1] : null;
 }
 
 function getBestAttempt(id) {
-  const a = loadAttempts();
-  const arr = a[id];
+  if (!_attemptsCache) return null;
+  const arr = _attemptsCache[id];
   if (!arr || !arr.length) return null;
   return arr.find(x => x.correct) || arr[arr.length - 1];
 }
-
 // ============================================================
-// NAVIGATION
+// NAVIGATION SETUP (navigate() defined later)
 // ============================================================
-function navigate(page) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-' + page).classList.add('active');
-  document.querySelector(`.nav-item[data-page="${page}"]`)?.classList.add('active');
-  document.querySelectorAll('.mobile-nav-item[data-page]').forEach(n => n.classList.remove('active'));
-  document.querySelector(`.mobile-nav-item[data-page="${page}"]`)?.classList.add('active');
-  document.querySelectorAll('.mobile-menu-item[data-page]').forEach(n => n.classList.remove('active'));
-  document.querySelector(`.mobile-menu-item[data-page="${page}"]`)?.classList.add('active');
-  if (page === 'home') renderHome();
-  if (page === 'stats') renderStats();
-  if (page === 'history') renderHistory();
-  if (page === 'browse') renderBrowse();
-  if (page === 'tests') renderTestsPage();
-  window.scrollTo(0, 0);
-}
-
-document.querySelectorAll('.nav-item[data-page]').forEach(item => {
-  item.addEventListener('click', () => navigate(item.dataset.page));
-});
-
-document.querySelectorAll('.mobile-nav-item[data-page]').forEach(item => {
-  item.addEventListener('click', () => navigate(item.dataset.page));
-});
 const moreBtn = document.getElementById('mobile-more-btn');
 const moreMenu = document.getElementById('mobile-more-menu');
 const moreBackdrop = document.getElementById('mobile-overlay-backdrop');
@@ -1475,42 +2166,32 @@ function openMoreMenu() { moreMenu.classList.add('visible'); moreBackdrop.style.
 function closeMoreMenu() { moreMenu.classList.remove('open'); moreBackdrop.style.display = 'none'; setTimeout(() => moreMenu.classList.remove('visible'), 300); }
 moreBtn.addEventListener('click', openMoreMenu);
 moreBackdrop.addEventListener('click', closeMoreMenu);
-document.querySelectorAll('.mobile-menu-item[data-page]').forEach(item => {
-  item.addEventListener('click', () => { navigate(item.dataset.page); closeMoreMenu(); });
-});
 document.getElementById('mobile-reset-btn').addEventListener('click', () => {
   closeMoreMenu();
-  if (confirm('Reset ALL data? This cannot be undone.')) { localStorage.removeItem(LS.attempts); localStorage.removeItem(LS.tests); alert('Progress reset.'); navigate('home'); }
-});
-
-// ============================================================
-// PROBLEM FILTERS & POOL
-// ============================================================
-function buildPool(opts = {}) {
-  let pool = [...problems];
-  if (opts.comp && opts.comp !== 'all') pool = pool.filter(p => p.Comp === opts.comp);
-  if (opts.year && opts.year !== 'all') pool = pool.filter(p => p.Year === opts.year);
-  if (opts.prob && opts.prob !== 'all') pool = pool.filter(p => p.PN === opts.prob);
-
-  const attempts = loadAttempts();
-  const settings = loadSettings();
-
-  if (opts.noRepeat) {
-    pool = pool.filter(p => !attempts[p.ID] || attempts[p.ID].length === 0);
-  }
-  if (opts.onlyWrong) {
-    pool = pool.filter(p => {
-      const hist = attempts[p.ID];
-
-      // Must have been attempted before
-      if (!hist || hist.length === 0) return false;
-
-      // Never answered correctly
-      return !hist.some(a => a.correct);
+  if (confirm('Reset ALL data? This cannot be undone.')) {
+    api('clear_attempts').then(() => {
+      _attemptsCache = null; _testsCache = null;
+      alert('Progress reset.'); navigate('home');
     });
   }
+});
+// ============================================================
+// PROBLEM FILTERS & POOL
 
-  // Shuffle
+
+function buildPool({ comp, year, prob, noRepeat, onlyWrong }) {
+  // Use cached attempts (loaded at init)
+  const attempts = _attemptsCache || {};
+  let pool = [...problems];
+  if (comp && comp !== 'all') pool = pool.filter(p => p.Comp === comp);
+  if (year && year !== 'all') pool = pool.filter(p => p.Year === year);
+  if (prob && prob !== 'all') pool = pool.filter(p => p.PN === prob);
+  if (noRepeat) pool = pool.filter(p => !attempts[p.ID] || !attempts[p.ID].length);
+  if (onlyWrong) pool = pool.filter(p => {
+    const hist = attempts[p.ID];
+    if (!hist || !hist.length) return true;
+    return !hist.some(a => a.correct);
+  });
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
@@ -1521,7 +2202,8 @@ function buildPool(opts = {}) {
 // ============================================================
 // PRACTICE SESSION
 // ============================================================
-function startSession() {
+async function startSession() {
+  await loadAttempts(); // ensure cache populated
   const comp = document.getElementById('filter-comp').value;
   const year = document.getElementById('filter-year').value;
   const prob = document.getElementById('filter-prob').value;
@@ -1540,7 +2222,6 @@ function startSession() {
   document.getElementById('question-card').classList.add('active');
   showQuestion(sessionQueue[0]);
 }
-
 async function renderProblemText(text) {
   if (!text) return '';
 
@@ -1847,6 +2528,15 @@ document.getElementById('skip-btn').addEventListener('click', skipQuestion);
 document.getElementById('answer-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') submitAnswer();
 });
+document.getElementById('start-practice').addEventListener('click', startSession);
+document.getElementById('submit-btn').addEventListener('click', submitAnswer);
+document.getElementById('reveal-btn').addEventListener('click', revealAnswer);
+document.getElementById('next-btn').addEventListener('click', nextQuestion);
+document.getElementById('end-session-btn').addEventListener('click', endSession);
+document.getElementById('skip-btn').addEventListener('click', skipQuestion);
+document.getElementById('answer-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitAnswer();
+});
 
 // Quick start buttons
 document.getElementById('quick-random').addEventListener('click', () => {
@@ -1870,7 +2560,27 @@ document.getElementById('quick-wrong').addEventListener('click', () => {
   document.getElementById('only-wrong').checked = true;
   startSession();
 });
-
+document.getElementById('quick-random').addEventListener('click', async () => {
+  navigate('practice');
+  document.getElementById('filter-comp').value = 'all';
+  document.getElementById('filter-year').value = 'all';
+  document.getElementById('filter-prob').value = 'all';
+  document.getElementById('no-repeat').checked = false;
+  document.getElementById('only-wrong').checked = false;
+  await startSession();
+});
+document.getElementById('quick-unseen').addEventListener('click', async () => {
+  navigate('practice');
+  document.getElementById('no-repeat').checked = true;
+  document.getElementById('only-wrong').checked = false;
+  await startSession();
+});
+document.getElementById('quick-wrong').addEventListener('click', async () => {
+  navigate('practice');
+  document.getElementById('no-repeat').checked = false;
+  document.getElementById('only-wrong').checked = true;
+  await startSession();
+});
 // ============================================================
 // BROWSE
 // ============================================================
@@ -1973,8 +2683,8 @@ document.getElementById('browse-sort').addEventListener('change', renderBrowse);
 // ============================================================
 // HOME PAGE
 // ============================================================
-function renderHome() {
-  const attempts = loadAttempts();
+async function renderHome() {
+  const attempts = await loadAttempts();
   const allAttempts = [];
   Object.entries(attempts).forEach(([id, arr]) => arr.forEach(a => allAttempts.push({ id, ...a })));
 
@@ -2010,7 +2720,6 @@ function renderHome() {
   renderYearAccChart(allAttempts);
   renderRecentChart(allAttempts);
 }
-
 function renderYearAccChart(allAttempts) {
   const ctx = document.getElementById('chart-year-acc');
   if (!ctx) return;
@@ -2072,12 +2781,12 @@ function renderRecentChart(allAttempts) {
 }
 
 // ============================================================
-// STATS PAGE
+// STATS PAGE (async)
 // ============================================================
 let statsRange = 'week';
 
-function renderStats() {
-  const attempts = loadAttempts();
+async function renderStats() {
+  const attempts = await loadAttempts();
   const now = new Date();
 
   function cutoff(range) {
@@ -2332,12 +3041,91 @@ document.getElementById('stats-time-filter').addEventListener('click', e => {
   statsRange = btn.dataset.range;
   renderStats();
 });
+async function renderTestStatsSection() {
+  const tests = await loadTests();
+
+  if (!tests.length) {
+    summaryEl.innerHTML = `<div class="stat-card" style="grid-column:1/-1;"><div class="stat-value" style="font-size:1.2rem;color:var(--text3);">No tests taken yet</div><div class="stat-label">Complete a mock test to see your stats here</div></div>`;
+    listEl.innerHTML = '';
+    // Destroy test charts if they exist
+    ['test-scores','test-by-pos'].forEach(k => { if (charts[k]) { charts[k].destroy(); delete charts[k]; } });
+    return;
+  }
+
+  const avgScore = (tests.reduce((s, t) => s + t.score, 0) / tests.length).toFixed(1);
+  const bestScore = Math.max(...tests.map(t => t.score));
+  const recentScore = tests[tests.length - 1].score;
+  const avgTotal = tests.reduce((s,t)=>s+(t.total||15),0)/tests.length;
+  const avgPct = Math.round(parseFloat(avgScore) / avgTotal * 100);
+
+  summaryEl.innerHTML = `
+    <div class="stat-card"><div class="stat-value">${tests.length}</div><div class="stat-label">Tests Taken</div></div>
+    <div class="stat-card stat-correct"><div class="stat-value">${bestScore}/${tests.find(t=>t.score===bestScore)?.total||'?'}</div><div class="stat-label">Best Score</div></div>
+    <div class="stat-card stat-accent2"><div class="stat-value">${avgScore}</div><div class="stat-label">Avg Score</div><div class="stat-sub">${avgPct}%</div></div>
+    <div class="stat-card"><div class="stat-value">${recentScore}/${tests[tests.length-1]?.total||'?'}</div><div class="stat-label">Last Test</div></div>
+  `;
+
+  // Score distribution chart
+  const scoreDistCtx = document.getElementById('chart-test-scores');
+  if (charts['test-scores']) charts['test-scores'].destroy();
+  const distBuckets = Array(16).fill(0);
+  tests.forEach(t => distBuckets[t.score]++);
+  charts['test-scores'] = new Chart(scoreDistCtx, {
+    type: 'bar',
+    data: {
+      labels: Array.from({length: 16}, (_, i) => i),
+      datasets: [{ label: 'Tests', data: distBuckets, backgroundColor: getAccentColor(0.75), borderRadius: 4 }]
+    },
+    options: { ...chartOptions({}), plugins: { legend: { display: false } } }
+  });
+
+  // Accuracy by position chart (across all tests)
+  const byPosCtx = document.getElementById('chart-test-by-pos');
+  if (charts['test-by-pos']) charts['test-by-pos'].destroy();
+  const posTotals = Array(15).fill(0);
+  const posCorrect = Array(15).fill(0);
+  tests.forEach(t => {
+    (t.results || []).forEach((r, i) => {
+      posTotals[i]++;
+      if (r.correct) posCorrect[i]++;
+    });
+  });
+  charts['test-by-pos'] = new Chart(byPosCtx, {
+    type: 'bar',
+    data: {
+      labels: Array.from({length: 15}, (_, i) => i + 1),
+      datasets: [{ label: 'Accuracy %', data: posTotals.map((t, i) => t ? Math.round(posCorrect[i] / t * 100) : 0), backgroundColor: Array.from({length:15}, (_, i) => `hsl(${140 - i * 8}, 65%, 55%)`), borderRadius: 4 }]
+    },
+    options: chartOptions({ max: 100, unit: '%' })
+  });
+
+  // Recent tests list (last 10)
+  const recent = [...tests].reverse().slice(0, 10);
+  listEl.innerHTML = recent.map(t => {
+    const pct = Math.round(t.score / t.total * 100);
+    const d = new Date(t.date).toLocaleDateString();
+    return `<div class="test-history-row">
+      <div class="test-score-badge">${t.score}/${t.total}</div>
+      <div class="test-history-bar"><div class="test-history-bar-fill" style="width:${pct}%"></div></div>
+      <div class="test-history-meta">${pct}% · ${d}</div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('stats-time-filter').addEventListener('click', e => {
+  const btn = e.target.closest('.toggle-btn');
+  if (!btn) return;
+  document.querySelectorAll('#stats-time-filter .toggle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  statsRange = btn.dataset.range;
+  renderStats();
+});
 
 // ============================================================
-// HISTORY PAGE
+// HISTORY PAGE (async)
 // ============================================================
-function renderHistory() {
-  const attempts = loadAttempts();
+async function renderHistory() {
+  const attempts = await loadAttempts();
   const histComp = document.getElementById('hist-comp').value;
   const histYear = document.getElementById('hist-year').value;
   const histResult = document.getElementById('hist-result').value;
@@ -2359,7 +3147,6 @@ function renderHistory() {
   });
   if (histResult !== 'all') filtered = filtered.filter(r => histResult === 'correct' ? r.correct : !r.correct);
 
-  // Sort
   if (histSort === 'date') {
     filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
   } else if (histSort === 'comp') {
@@ -2376,7 +3163,7 @@ function renderHistory() {
 
   const tbody = document.getElementById('history-tbody');
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:40px; color:var(--text3);">No attempts yet. Start practicing!</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text3);">No attempts yet. Start practicing!</td></tr>`;
     return;
   }
 
@@ -2405,15 +3192,14 @@ function renderHistory() {
   }).join('');
 }
 
-function deleteAttempt(problemId, date) {
-  const attempts = loadAttempts();
-  if (!attempts[problemId]) return;
-  attempts[problemId] = attempts[problemId].filter(a => a.date !== date);
-  if (attempts[problemId].length === 0) delete attempts[problemId];
-  localStorage.setItem(LS.attempts, JSON.stringify(attempts));
+async function deleteAttempt(problemId, date) {
+  await api('delete_attempt', { problem_id: problemId, date });
+  if (_attemptsCache && _attemptsCache[problemId]) {
+    _attemptsCache[problemId] = _attemptsCache[problemId].filter(a => a.date !== date);
+    if (!_attemptsCache[problemId].length) delete _attemptsCache[problemId];
+  }
   renderHistory();
 }
-
 // Delete attempt button handler (delegated)
 document.getElementById('history-tbody').addEventListener('click', e => {
   const openBtn = e.target.closest('.open-problem-btn');
@@ -2453,14 +3239,38 @@ document.getElementById('export-btn').addEventListener('click', () => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = 'aimelab_history.csv'; a.click();
 });
+document.getElementById('export-btn').addEventListener('click', async () => {
+  const attempts = await loadAttempts();
+  let csv = 'ID,Competition,Year,Problem Number,Your Answer,Correct Answer,Result,Date\n';
+  Object.entries(attempts).forEach(([id, arr]) => {
+    const prob = problems.find(p => p.ID === id);
+    arr.forEach(a => {
+      csv += `${id},${prob?.Comp||''},${prob?.Year||''},${prob?.PN||''},${a.userAnswer??''},${a.correctAnswer??''},${a.correct?'correct':'wrong'},${a.date||''}\n`;
+    });
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'aimelab_history.csv'; a.click();
+});
 
 // ============================================================
-// SETTINGS
+// SETTINGS (DB-backed)
 // ============================================================
 function applySettings(s) {
-  document.documentElement.dataset.theme = s.theme;
-  document.documentElement.dataset.fontSize = s.fontSize;
-  if (s.hcontrast) {
+  // Map snake_case from DB to camelCase expected by applySettings
+  const mapped = {
+    theme: s.theme || 'dark',
+    fontSize: s.font_size || s.fontSize || 'medium',
+    autoadvance: !!(s.autoadvance),
+    showid: s.showid !== undefined ? !!(s.showid) : true,
+    confirmSkip: !!(s.confirm_skip || s.confirmSkip),
+    hcontrast: !!(s.hcontrast),
+    reducemotion: !!(s.reducemotion),
+    largetargets: !!(s.largetargets),
+  };
+  document.documentElement.dataset.theme = mapped.theme;
+  document.documentElement.dataset.fontSize = mapped.fontSize;
+  if (mapped.hcontrast) {
     const hc = {
       dark:     { text: '#ffffff', text2: '#d0d4f0', text3: '#a0a8cc', border: '#6070c0' },
       light:    { text: '#000000', text2: '#111630', text3: '#2a3060', border: '#4a5080' },
@@ -2474,10 +3284,10 @@ function applySettings(s) {
       arctic:   { text: '#000000', text2: '#0a2040', text3: '#204060', border: '#0080c0' },
       candy:    { text: '#ffffff', text2: '#f0c0ff', text3: '#c070e0', border: '#9030c0' },
       mocha:    { text: '#ffffff', text2: '#f0d8b0', text3: '#d0a860', border: '#a07030' },
-    }[s.theme] || { text: '#ffffff', text2: '#d0d4f0', text3: '#a0a8cc', border: '#6070c0' };
-    document.documentElement.style.setProperty('--text',   hc.text);
-    document.documentElement.style.setProperty('--text2',  hc.text2);
-    document.documentElement.style.setProperty('--text3',  hc.text3);
+    }[mapped.theme] || { text: '#ffffff', text2: '#d0d4f0', text3: '#a0a8cc', border: '#6070c0' };
+    document.documentElement.style.setProperty('--text', hc.text);
+    document.documentElement.style.setProperty('--text2', hc.text2);
+    document.documentElement.style.setProperty('--text3', hc.text3);
     document.documentElement.style.setProperty('--border', hc.border);
   } else {
     document.documentElement.style.removeProperty('--text');
@@ -2485,12 +3295,12 @@ function applySettings(s) {
     document.documentElement.style.removeProperty('--text3');
     document.documentElement.style.removeProperty('--border');
   }
-  if (s.reducemotion) {
+  if (mapped.reducemotion) {
     document.documentElement.style.setProperty('--transition', '0s');
   } else {
     document.documentElement.style.removeProperty('--transition');
   }
-  if (s.largetargets) {
+  if (mapped.largetargets) {
     document.documentElement.style.setProperty('--btn-padding', '14px 24px');
     document.documentElement.style.setProperty('font-size', '17px');
   } else {
@@ -2498,90 +3308,97 @@ function applySettings(s) {
     document.documentElement.style.removeProperty('font-size');
   }
 
-  document.querySelectorAll('.theme-swatch').forEach(s2 => s2.classList.toggle('active', s2.dataset.theme === s.theme));
-  document.querySelectorAll('.font-size-btn').forEach(b => b.classList.toggle('active', b.dataset.size === s.fontSize));
-  document.getElementById('setting-autoadvance').checked = s.autoadvance;
-  document.getElementById('setting-showid').checked = s.showid;
-  document.getElementById('setting-confirm-skip').checked = s.confirmSkip;
-  document.getElementById('setting-hcontrast').checked = s.hcontrast;
-  document.getElementById('setting-reducemotion').checked = s.reducemotion;
-  document.getElementById('setting-largetargets').checked = s.largetargets;
+  document.querySelectorAll('.theme-swatch').forEach(s2 => s2.classList.toggle('active', s2.dataset.theme === mapped.theme));
+  document.querySelectorAll('.font-size-btn').forEach(b => b.classList.toggle('active', b.dataset.size === mapped.fontSize));
+  document.getElementById('setting-autoadvance').checked = mapped.autoadvance;
+  document.getElementById('setting-showid').checked = mapped.showid;
+  document.getElementById('setting-confirm-skip').checked = mapped.confirmSkip;
+  document.getElementById('setting-hcontrast').checked = mapped.hcontrast;
+  document.getElementById('setting-reducemotion').checked = mapped.reducemotion;
+  document.getElementById('setting-largetargets').checked = mapped.largetargets;
 }
 
 document.querySelectorAll('.theme-swatch').forEach(sw => {
   sw.addEventListener('click', () => {
-    const s = loadSettings(); s.theme = sw.dataset.theme; saveSettings(s); applySettings(s);
+    const s = loadSettings(); s.theme = sw.dataset.theme;
+    applySettings(s); saveSettings(s);
+    Object.assign(INITIAL_SETTINGS, { theme: s.theme });
   });
 });
 
 document.querySelectorAll('.font-size-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    const s = loadSettings(); s.fontSize = btn.dataset.size; saveSettings(s); applySettings(s);
+    const s = loadSettings(); s.font_size = btn.dataset.size; s.fontSize = btn.dataset.size;
+    applySettings(s); saveSettings(s);
+    Object.assign(INITIAL_SETTINGS, { font_size: s.font_size });
   });
 });
 
 ['setting-autoadvance', 'setting-showid', 'setting-confirm-skip', 'setting-hcontrast', 'setting-reducemotion', 'setting-largetargets'].forEach(id => {
   document.getElementById(id).addEventListener('change', function() {
     const s = loadSettings();
-    const key = { 'setting-autoadvance': 'autoadvance', 'setting-showid': 'showid', 'setting-confirm-skip': 'confirmSkip', 'setting-hcontrast': 'hcontrast', 'setting-reducemotion': 'reducemotion', 'setting-largetargets': 'largetargets' }[id];
-    s[key] = this.checked;
-    saveSettings(s); applySettings(s);
+    const keyMap = {
+      'setting-autoadvance': 'autoadvance', 'setting-showid': 'showid',
+      'setting-confirm-skip': ['confirm_skip','confirmSkip'],
+      'setting-hcontrast': 'hcontrast', 'setting-reducemotion': 'reducemotion',
+      'setting-largetargets': 'largetargets'
+    };
+    const k = keyMap[id];
+    if (Array.isArray(k)) { s[k[0]] = this.checked; s[k[1]] = this.checked; }
+    else s[k] = this.checked;
+    applySettings(s); saveSettings(s);
   });
 });
 
-document.getElementById('export-data-btn').addEventListener('click', () => {
-  const data = { attempts: loadAttempts(), settings: loadSettings(), tests: loadTests() };
+document.getElementById('export-data-btn').addEventListener('click', async () => {
+  const data = { attempts: await loadAttempts(), settings: loadSettings(), tests: await loadTests() };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob); const a = document.createElement('a');
   a.href = url; a.download = 'aimelab_data.json'; a.click();
 });
 
-document.getElementById('clear-data-btn').addEventListener('click', () => {
+document.getElementById('clear-data-btn').addEventListener('click', async () => {
   if (confirm('This will permanently delete all your attempt history and test records. Are you sure?')) {
-    localStorage.removeItem(LS.attempts);
-    localStorage.removeItem(LS.tests);
+    await api('clear_attempts');
+    _attemptsCache = null; _testsCache = null;
     alert('Data cleared.');
   }
 });
 
-document.getElementById('reset-progress-btn').addEventListener('click', () => {
+document.getElementById('reset-progress-btn').addEventListener('click', async () => {
   if (confirm('Reset ALL data? This cannot be undone.')) {
-    localStorage.removeItem(LS.attempts);
-    localStorage.removeItem(LS.tests);
-    alert('Progress reset.');
-    navigate('home');
+    await api('clear_attempts');
+    _attemptsCache = null; _testsCache = null;
+    alert('Progress reset.'); navigate('home');
   }
 });
 
 // ============================================================
 // TESTS PAGE
 // ============================================================
-let testQuestions = [];       // array of 15 problems (index = pn-1)
-let testAnswers = [];         // array of 15: null | { userAnswer, correct, correctAnswer, revealed }
-let testCurrentIdx = 0;       // which question is being shown (0–14)
+let testQuestions = [];
+let testAnswers = [];
+let testCurrentIdx = 0;
 let testActive = false;
 
 function renderTestsPage() {
-  // show config, hide active/results
   document.getElementById('test-config').style.display = '';
   document.getElementById('test-active').style.display = 'none';
   document.getElementById('test-results').style.display = 'none';
 }
 
-function buildTestQuestions() {
+async function buildTestQuestions() {
   const noRepeat = document.getElementById('test-no-repeat').checked;
   const testCompVal = document.getElementById('test-comp').value;
   const testYearVal = document.getElementById('test-year').value;
-  const attempts = loadAttempts();
+  const attempts = await loadAttempts();
 
-  // Filter base pool by competition
   let basePool = [...problems];
   if (testCompVal === 'AIME_ALL') basePool = basePool.filter(p => p.Comp.startsWith('AIME'));
   else if (testCompVal === 'AMC_ALL') basePool = basePool.filter(p => p.Comp.startsWith('AMC'));
   else basePool = basePool.filter(p => p.Comp === testCompVal);
   if (testYearVal !== 'all') basePool = basePool.filter(p => p.Year === testYearVal);
 
-  // Determine max problem number in pool
   const maxPN = Math.max(...basePool.map(p => parseInt(p.PN) || 0).filter(n => n > 0));
   if (!maxPN) return null;
 
@@ -2589,39 +3406,28 @@ function buildTestQuestions() {
   for (let pn = 1; pn <= maxPN; pn++) {
     let pool = basePool.filter(p => parseInt(p.PN, 10) === pn);
     if (!pool.length) continue;
-
-    // noRepeat: exclude problems already attempted (correctly or not)
     if (noRepeat) {
-      const noRepeatPool = pool.filter(p => !attempts[p.ID] || attempts[p.ID].length === 0);
+      const noRepeatPool = pool.filter(p => !attempts[p.ID] || !attempts[p.ID].length);
       pool = noRepeatPool.length ? noRepeatPool : pool;
     }
-
-    // Pick a random one
-    const pick = pool[Math.floor(Math.random() * pool.length)];
-    questions.push(pick);
+    questions.push(pool[Math.floor(Math.random() * pool.length)]);
   }
   return questions.length ? questions : null;
 }
 
-function startTest() {
-  const qs = buildTestQuestions();
-  if (!qs) {
-    alert('Not enough problems to build a test. Try unchecking "Skip already-attempted".');
-    return;
-  }
+async function startTest() {
+  const qs = await buildTestQuestions();
+  if (!qs) { alert('Not enough problems to build a test. Try unchecking "Skip already-attempted".'); return; }
   testQuestions = qs;
   testAnswers = Array(qs.length).fill(null);
   testCurrentIdx = 0;
   testActive = true;
-
   document.getElementById('test-config').style.display = 'none';
   document.getElementById('test-results').style.display = 'none';
   document.getElementById('test-active').style.display = '';
-
   renderTestNav();
   showTestQuestion(0);
 }
-
 function renderTestNav() {
   const totalEl = document.getElementById('test-q-total');
   if (totalEl) totalEl.textContent = testQuestions.length;
@@ -2862,14 +3668,26 @@ document.getElementById('test-answer-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') submitTestAnswer();
 });
 // Part filter mutual exclusion
-// Update test year dropdown when competition changes
+document.getElementById('test-again-btn').addEventListener('click', () => { renderTestsPage(); });
+document.getElementById('test-review-btn').addEventListener('click', async () => {
+  const wrongProblems = testAnswers.map((a, i) => (!a.correct ? testQuestions[i] : null)).filter(Boolean);
+  if (!wrongProblems.length) { alert('No mistakes to review!'); return; }
+  navigate('practice');
+  sessionQueue = wrongProblems;
+  sessionIndex = 0;
+  document.getElementById('practice-config').style.display = 'none';
+  document.getElementById('question-card').classList.add('active');
+  showQuestion(wrongProblems[0]);
+});
+document.getElementById('test-answer-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitTestAnswer();
+});
 document.getElementById('test-comp').addEventListener('change', function() {
   const years = getYearsForComp(this.value);
   const testYearSel = document.getElementById('test-year');
   testYearSel.innerHTML = '<option value="all">All Years</option>';
   years.forEach(y => { const o = document.createElement('option'); o.value = y; o.textContent = y; testYearSel.appendChild(o); });
 });
-
 // ============================================================
 // CHART HELPERS
 // ============================================================
@@ -2922,181 +3740,497 @@ function typeset(selector) {
 }
 
 // ============================================================
-// INIT
+// PROFILE & AUTH JS
 // ============================================================
-async function init() {
-  const settings = loadSettings();
-  applySettings(settings);
 
+// ── Banner CSS generation ──
+function bannerCSS(style, c1, c2, angle) {
+  switch(style) {
+    case 'solid':
+      return `background:${c1};`;
+    case 'mesh':
+      return `background:radial-gradient(ellipse at 20% 50%, ${c1} 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, ${c2} 0%, transparent 55%), radial-gradient(ellipse at 60% 80%, ${c1}88 0%, transparent 50%);background-color:${c2}22;`;
+    case 'wave':
+      return `background:linear-gradient(${angle}deg, ${c1} 0%, ${c2} 50%, ${c1} 100%);`;
+    case 'dots':
+      return `background-color:${c1}22;background-image:radial-gradient(${c2} 1.5px, transparent 1.5px);background-size:18px 18px;`;
+    case 'none':
+      return `background:var(--bg3);`;
+    default: // gradient
+      return `background:linear-gradient(${angle}deg, ${c1}, ${c2});`;
+  }
+}
+
+function applyBannerToEl(el, style, c1, c2, angle) {
+  const css = bannerCSS(style, c1, c2, angle);
+  el.setAttribute('style', css);
+}
+
+// State for edit form
+let editBannerStyle  = CURRENT_USER.banner_style  || 'gradient';
+let editBannerColor1 = CURRENT_USER.banner_color1 || '#6c8ef5';
+let editBannerColor2 = CURRENT_USER.banner_color2 || '#a78bfa';
+let editBannerAngle  = CURRENT_USER.banner_angle  || 135;
+
+function refreshBannerPreview() {
+  const prev = document.getElementById('banner-preview-box');
+  if (prev) applyBannerToEl(prev, editBannerStyle, editBannerColor1, editBannerColor2, editBannerAngle);
+  // Also update the live card banner
+  const liveBanner = document.querySelector('#profile-card-view .profile-banner');
+  if (liveBanner) applyBannerToEl(liveBanner, editBannerStyle, editBannerColor1, editBannerColor2, editBannerAngle);
+  // Show/hide angle slider
+  const angleRow = document.getElementById('banner-angle-row');
+  if (angleRow) angleRow.style.display = ['gradient','wave'].includes(editBannerStyle) ? '' : 'none';
+}
+
+// Banner style picker
+document.getElementById('banner-style-picker')?.addEventListener('click', e => {
+  const btn = e.target.closest('.banner-style-btn');
+  if (!btn) return;
+  document.querySelectorAll('.banner-style-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  editBannerStyle = btn.dataset.style;
+  refreshBannerPreview();
+});
+
+// Color pickers
+document.getElementById('banner-color1')?.addEventListener('input', e => {
+  editBannerColor1 = e.target.value;
+  document.getElementById('bc1-swatch').style.background = editBannerColor1;
+  refreshBannerPreview();
+});
+document.getElementById('bc1-swatch')?.addEventListener('click', () => {
+  document.getElementById('banner-color1').click();
+});
+document.getElementById('banner-color2')?.addEventListener('input', e => {
+  editBannerColor2 = e.target.value;
+  document.getElementById('bc2-swatch').style.background = editBannerColor2;
+  refreshBannerPreview();
+});
+document.getElementById('bc2-swatch')?.addEventListener('click', () => {
+  document.getElementById('banner-color2').click();
+});
+
+// Angle slider
+document.getElementById('banner-angle')?.addEventListener('input', e => {
+  editBannerAngle = parseInt(e.target.value);
+  document.getElementById('banner-angle-val').textContent = editBannerAngle + '°';
+  refreshBannerPreview();
+});
+
+document.getElementById('auz')
+  ?.addEventListener('click', () => {
+    const input = document.getElementById('avatar-upload-input');
+    
+    if (input) {
+      input.value = ''; // allows re-selecting same file
+      input.click();
+    }
+});
+
+// ── Avatar upload ──
+document.getElementById('avatar-upload-input')?.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Client-side preview immediately
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const editAvatar = document.getElementById('edit-avatar-preview');
+    if (editAvatar) editAvatar.innerHTML = `<img src="${ev.target.result}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" id="avatar-img-preview"/>`;
+    // Also update live card
+    document.getElementById('profile-view-avatar-img')?.setAttribute('src', ev.target.result);
+  };
+  reader.readAsDataURL(file);
+
+  // Upload
+  const prog = document.getElementById('avatar-upload-progress');
+  const bar  = document.getElementById('avatar-upload-bar');
+  const stat = document.getElementById('avatar-upload-status');
+  prog.style.display = '';
+  bar.style.width = '30%';
+  stat.textContent = 'Uploading…';
+
+  const form = new FormData();
+  form.append('avatar', file);
   try {
-    const DATASET_URL = './dataset/dataset.csv';
-    const resp = await fetch(DATASET_URL);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const text = await resp.text();
+    const r = await fetch('api/api.php?action=upload_avatar', { method: 'POST', body: form });
+    const res = await r.json();
+    bar.style.width = '100%';
+    if (res.ok) {
+      stat.textContent = 'Uploaded!';
+      stat.style.color = 'var(--correct)';
+      CURRENT_USER.avatar_url = res.url;
+      document.getElementById('delete-avatar-btn').style.display = '';
+      // Update sidebar avatar
+      const sideAvatar = document.getElementById('sidebar-avatar');
+      sideAvatar.innerHTML = `<img src="${res.url}?v=${Date.now()}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"/>`;
+      sideAvatar.style.background = 'transparent';
+      setTimeout(() => { prog.style.display = 'none'; stat.style.color = ''; }, 2000);
+    } else {
+      stat.textContent = res.error || 'Upload failed';
+      stat.style.color = 'var(--wrong)';
+    }
+  } catch {
+    stat.textContent = 'Network error';
+    stat.style.color = 'var(--wrong)';
+  }
+});
 
-    // Parse and deduplicate by problem_id (keep first occurrence)
-    const raw = Papa.parse(text, { header: true, skipEmptyLines: true }).data;
-    const seen = new Set();
-    const deduped = [];
-    raw.forEach(r => {
-      if (!r.problem_id || !r.problem) return;
-      if (!seen.has(r.problem_id)) {
-        seen.add(r.problem_id);
-        deduped.push(r);
-      }
-    });
+document.getElementById('delete-avatar-btn')?.addEventListener('click', async () => {
+  if (!confirm('Remove your profile photo?')) return;
+  await api('delete_avatar');
+  CURRENT_USER.avatar_url = null;
+  document.getElementById('delete-avatar-btn').style.display = 'none';
+  // Reset avatar preview to emoji
+  const prev = document.getElementById('edit-avatar-preview');
+  if (prev) {
+    prev.style.background = profileAvatarColor;
+    prev.innerHTML = `<span id="avatar-emoji-display">${profileAvatarEmoji}</span>`;
+  }
+  // Update sidebar
+  const sideAvatar = document.getElementById('sidebar-avatar');
+  sideAvatar.style.background = profileAvatarColor;
+  sideAvatar.textContent = profileAvatarEmoji;
+  // Update live card
+  renderProfile();
+});
 
-    problems = deduped.map(r => {
-      // Extract year and competition from link
-      const linkMatch = r.link && r.link.match(
-        /(\d{4})_(Fall_AMC_12[AB]|Fall_AMC_10[AB]|AMC_12[ABP]?|AMC_10[AB]?|AMC_8|AIME_II|AIME_I|AIME|AJHSME|AHSME|USAJMO|USAMO|USOJMO|USOMO)_Problems/
-      );
-      const year = linkMatch ? linkMatch[1] : '';
-      const comp = linkMatch ? linkMatch[2].replace(/_/g, ' ') : '';
-      // Determine if free-response (integer/numeric answer) or MCQ (letter answer A–E)
-      // Free-response: AIME variants, olympiads (USAMO/USAJMO/USOJMO/USOMO),
-      // and AHSME problems that have no letter (pre-multiple-choice era)
-      const isAIME = comp.startsWith('AIME')
-        || ['USAMO', 'USAJMO', 'USOJMO', 'USOMO'].includes(comp)
-        || (comp === 'AHSME' && !r.letter);
-      // Problem number from link
-      const pnMatch = r.link && r.link.match(/Problem_(\d+)/);
-      const pn = pnMatch ? pnMatch[1] : '';
-      return {
-        ID: r.problem_id,
-        Year: year,
-        Comp: comp,
-        PN: pn,
-        Q: r.problem,
-        A: (() => {
-          if (r.answer == null) return '';
-          const s = String(r.answer).trim();
-          // Strip leading zeros: "041" → "41", "007" → "7". Preserves decimals and non-numeric.
-          const n = Number(s);
-          return (s !== '' && !isNaN(n) && isFinite(n)) ? String(n) : s;
-        })(),
-        Letter: r.letter || '',
-        IsAIME: isAIME,
-        Link: r.link || ''
-      };
-    });
+// ── renderProfile ──
+async function renderProfile() {
+  // Apply current banner to card
+  const liveBanner = document.querySelector('#profile-card-view .profile-banner');
+  if (liveBanner) applyBannerToEl(liveBanner, CURRENT_USER.banner_style, CURRENT_USER.banner_color1, CURRENT_USER.banner_color2, CURRENT_USER.banner_angle);
 
-    console.log('Loaded dataset:', problems.length, 'unique problems');
-  } catch (err) {
-    console.error('Dataset loading failed:', err);
-    document.getElementById('loading-overlay').innerHTML = `
-      <p style="color:var(--wrong); font-weight:600;">Failed to load dataset. Make sure dataset.csv is at ./dataset/dataset.csv</p>
-    `;
-    return;
+  // Update avatar display
+  const avatarEl = document.getElementById('profile-preview-avatar');
+  if (avatarEl) {
+    if (CURRENT_USER.avatar_url) {
+      avatarEl.style.background = 'transparent';
+      avatarEl.innerHTML = `<img src="${CURRENT_USER.avatar_url}?v=${Date.now()}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" id="profile-view-avatar-img"/>`;
+    } else {
+      avatarEl.style.background = CURRENT_USER.avatar_color;
+      avatarEl.innerHTML = `<span id="avatar-emoji-display">${CURRENT_USER.avatar_emoji}</span>`;
+    }
   }
 
-  // Populate competition dropdowns
-  const comps = [...new Set(problems.map(p => p.Comp))].filter(Boolean).sort();
-  const compOrder = [
-    'AIME', 'AIME I', 'AIME II',
-    'AMC 8', 'AMC 10', 'AMC 10A', 'AMC 10B', 'AMC 12', 'AMC 12A', 'AMC 12B', 'AMC 12P',
-    'AJHSME', 'AHSME',
-    'Fall AMC 10A', 'Fall AMC 10B', 'Fall AMC 12A', 'Fall AMC 12B',
-    'USAJMO', 'USAMO', 'USOJMO', 'USOMO'
+  const attempts = await loadAttempts();
+  const tests = await loadTests();
+  const allAttempts = [];
+  Object.entries(attempts).forEach(([id, arr]) => arr.forEach(a => allAttempts.push({ id, ...a })));
+
+  const total = allAttempts.length;
+  const correct = allAttempts.filter(a => a.correct).length;
+  const unique = new Set(allAttempts.map(a => a.id)).size;
+  const acc = total ? Math.round(correct / total * 100) : 0;
+  const streak = calcStreak(allAttempts);
+
+  document.getElementById('pstat-attempts').textContent = total;
+  document.getElementById('pstat-correct').textContent = correct;
+  document.getElementById('pstat-acc').textContent = acc + '%';
+  document.getElementById('pstat-unique').textContent = unique;
+  document.getElementById('pstat-tests').textContent = tests.length;
+  document.getElementById('profile-streak-val').textContent = streak;
+
+  // ── Heatmap ──
+  const heatmap = document.getElementById('profile-heatmap');
+  heatmap.innerHTML = '';
+  const dayCounts = {};
+  allAttempts.forEach(a => { const d = a.date?.slice(0,10); if (d) dayCounts[d] = (dayCounts[d]||0)+1; });
+  const today = new Date();
+  const startDate = new Date(today); startDate.setDate(startDate.getDate() - 181);
+  startDate.setDate(startDate.getDate() - startDate.getDay());
+  for (let d = new Date(startDate); d <= today; d.setDate(d.getDate()+1)) {
+    const ds = d.toISOString().slice(0,10);
+    const count = dayCounts[ds] || 0;
+    const level = count===0?0:count<=2?1:count<=5?2:count<=9?3:4;
+    const cell = document.createElement('div');
+    cell.className = 'heatmap-cell';
+    if (level > 0) cell.setAttribute('data-count', level);
+    cell.title = ds + (count ? ': '+count+' attempt'+(count>1?'s':'') : ': no activity');
+    heatmap.appendChild(cell);
+  }
+
+  // ── Comp bars ──
+  const compMap = {};
+  allAttempts.forEach(a => {
+    const prob = problems.find(p => p.ID === a.id); if (!prob) return;
+    const k = prob.Comp; if (!compMap[k]) compMap[k] = { c:0, t:0 };
+    compMap[k].t++; if (a.correct) compMap[k].c++;
+  });
+  const sortedComps = Object.entries(compMap).filter(([,v])=>v.t>=3).sort((a,b)=>b[1].t-a[1].t).slice(0,8);
+  const barsEl = document.getElementById('profile-comp-bars');
+  if (!sortedComps.length) { barsEl.innerHTML = '<p style="color:var(--text3);font-size:13px;">No attempts yet.</p>'; }
+  else {
+    barsEl.innerHTML = sortedComps.map(([comp,v]) => {
+      const pct = Math.round(v.c/v.t*100);
+      return `<div class="profile-comp-bar-row"><div class="profile-comp-label">${comp}</div><div class="profile-comp-bar-bg"><div class="profile-comp-bar-fill" style="width:${pct}%"></div></div><div class="profile-comp-pct">${pct}%</div></div>`;
+    }).join('');
+  }
+
+  // ── Achievements ──
+  const achievements = [
+    { icon:'🎯', name:'First Blood',    desc:'Solved your first problem',      earned: total>=1 },
+    { icon:'🔟', name:'Getting Started',desc:'10 problems attempted',          earned: total>=10 },
+    { icon:'💯', name:'Century',        desc:'100 problems attempted',         earned: total>=100 },
+    { icon:'⚡', name:'Grind Mode',     desc:'500 problems attempted',         earned: total>=500 },
+    { icon:'🏹', name:'Sharpshooter',   desc:'80%+ accuracy (min 20)',         earned: total>=20&&acc>=80 },
+    { icon:'✨', name:'Perfectionist',  desc:'90%+ accuracy (min 50)',         earned: total>=50&&acc>=90 },
+    { icon:'🔥', name:'On Fire',        desc:'3-day streak',                   earned: streak>=3 },
+    { icon:'🌟', name:'Week Warrior',   desc:'7-day streak',                   earned: streak>=7 },
+    { icon:'🏆', name:'Unstoppable',    desc:'30-day streak',                  earned: streak>=30 },
+    { icon:'📝', name:'Test Taker',     desc:'Completed a mock test',          earned: tests.length>=1 },
+    { icon:'📊', name:'Data Driven',    desc:'5 mock tests completed',         earned: tests.length>=5 },
+    { icon:'🗺️', name:'Explorer',       desc:'50 unique problems seen',        earned: unique>=50 },
+    { icon:'🎖️', name:'Veteran',        desc:'250 unique problems seen',       earned: unique>=250 },
   ];
-  const sortedComps = [...compOrder.filter(c => comps.includes(c)), ...comps.filter(c => !compOrder.includes(c))];
-
-  // Practice competition filter
-  const filterCompSel = document.getElementById('filter-comp');
-  filterCompSel.innerHTML = '<option value="all">All Competitions</option>';
-  sortedComps.forEach(c => {
-    const o = document.createElement('option'); o.value = c; o.textContent = c; filterCompSel.appendChild(o);
-  });
-
-  // Browse competition filter - default to first AIME
-  const browseCompSel = document.getElementById('browse-comp');
-  browseCompSel.innerHTML = '';
-  sortedComps.forEach(c => {
-    const o = document.createElement('option'); o.value = c; o.textContent = c; browseCompSel.appendChild(o);
-  });
-
-  // History competition filter
-  const histCompSel = document.getElementById('hist-comp');
-  histCompSel.innerHTML = '<option value="all">All Competitions</option>';
-  sortedComps.forEach(c => {
-    const o = document.createElement('option'); o.value = c; o.textContent = c; histCompSel.appendChild(o);
-  });
-
-  // Test competition filter - all competitions, grouped
-  const testCompSel = document.getElementById('test-comp');
-  testCompSel.innerHTML = '';
-  const aimeComps = sortedComps.filter(c => c.startsWith('AIME'));
-  const amcComps = sortedComps.filter(c => c.startsWith('AMC') || c.startsWith('Fall AMC'));
-  const otherComps = sortedComps.filter(c => !c.startsWith('AIME') && !c.startsWith('AMC') && !c.startsWith('Fall AMC'));
-  [
-    { v: 'AIME_ALL', t: 'AIME (all)' }, ...aimeComps.map(c => ({ v: c, t: c })),
-    { v: 'AMC_ALL',  t: 'AMC (all)'  }, ...amcComps.map(c => ({ v: c, t: c })),
-    ...otherComps.map(c => ({ v: c, t: c }))
-  ].forEach(({ v, t }) => {
-    const o = document.createElement('option'); o.value = v; o.textContent = t; testCompSel.appendChild(o);
-  });
-
-  // Populate year dropdowns (year selects depend on comp selection - start with all)
-  populateYearSelects();
-
-  // Set browse default
-  if (browseCompSel.options.length) browseCompSel.value = browseCompSel.options[0].value;
-  updateBrowseYears();
-
-  // Populate problem # filter
-  updateProbFilter();
-
-  document.getElementById('loading-overlay').style.display = 'none';
-  renderHome();
-  renderBrowse();
+  document.getElementById('profile-achievements').innerHTML = achievements.map(a =>
+    `<div class="profile-achievement ${a.earned?'earned':''}" title="${a.desc}">
+      <span class="ach-icon">${a.icon}</span>
+      <div class="ach-info"><span class="ach-name">${a.name}</span><span class="ach-desc">${a.desc}</span></div>
+    </div>`
+  ).join('');
 }
 
-function getYearsForComp(compVal) {
-  let pool = [...problems];
-  if (compVal === 'AIME_ALL') pool = pool.filter(p => p.Comp.startsWith('AIME'));
-  else if (compVal === 'AMC_ALL') pool = pool.filter(p => p.Comp.startsWith('AMC'));
-  else if (compVal && compVal !== 'all') pool = pool.filter(p => p.Comp === compVal);
-  return [...new Set(pool.map(p => p.Year))].filter(Boolean).sort();
-}
+// ── Toggle edit/view ──
+document.getElementById('profile-edit-toggle').addEventListener('click', () => {
+  document.getElementById('profile-edit-section').style.display = '';
+  document.getElementById('profile-card-view').style.display = 'none';
+  document.getElementById('profile-edit-toggle').parentElement.style.display = 'none';
+  document.querySelectorAll('#page-profile > .card:not(#profile-edit-section), #page-profile > div[style*="grid"]').forEach(el => el.style.display = 'none');
+  // Init banner state from CURRENT_USER
+  editBannerStyle  = CURRENT_USER.banner_style  || 'gradient';
+  editBannerColor1 = CURRENT_USER.banner_color1 || '#6c8ef5';
+  editBannerColor2 = CURRENT_USER.banner_color2 || '#a78bfa';
+  editBannerAngle  = CURRENT_USER.banner_angle  || 135;
+  refreshBannerPreview();
+});
 
-function populateYearSelects() {
-  // Filter-year and hist-year use their own comp selector to filter years
-  ['filter-year', 'hist-year'].forEach(id => {
-    const sel = document.getElementById(id);
-    const years = getYearsForComp('all');
-    sel.innerHTML = '<option value="all">All Years</option>';
-    years.forEach(y => { const o = document.createElement('option'); o.value = y; o.textContent = y; sel.appendChild(o); });
-  });
-  // Test year
-  const testCompVal = document.getElementById('test-comp').value;
-  const testYears = getYearsForComp(testCompVal);
-  const testYearSel = document.getElementById('test-year');
-  testYearSel.innerHTML = '<option value="all">All Years</option>';
-  testYears.forEach(y => { const o = document.createElement('option'); o.value = y; o.textContent = y; testYearSel.appendChild(o); });
-}
+document.getElementById('profile-cancel-btn').addEventListener('click', () => {
+  document.getElementById('profile-edit-section').style.display = 'none';
+  document.getElementById('profile-card-view').style.display = '';
+  document.getElementById('profile-edit-toggle').parentElement.style.display = '';
+  document.querySelectorAll('#page-profile > .card, #page-profile > div[style*="grid"]').forEach(el => el.style.display = '');
+  renderProfile();
+});
 
-function updateBrowseYears() {
-  const comp = document.getElementById('browse-comp').value;
-  const years = getYearsForComp(comp);
-  const sel = document.getElementById('browse-year');
-  sel.innerHTML = '<option value="all">All Years</option>';
-  years.forEach(y => { const o = document.createElement('option'); o.value = y; o.textContent = y; sel.appendChild(o); });
-  if (years.includes('2024')) sel.value = '2024';
-  else if (years.length) sel.value = years[years.length - 1];
-}
+document.getElementById('user-chip-btn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('user-menu').classList.toggle('open');
+});
+document.addEventListener('click', () => {
+  document.getElementById('user-menu')?.classList.remove('open');
+});
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  await api('logout');
+  location.href = 'index.php?auth=login';
+});
 
-function updateProbFilter() {
-  const comp = document.getElementById('filter-comp').value;
-  let pool = [...problems];
-  if (comp && comp !== 'all') pool = pool.filter(p => p.Comp === comp);
-  const maxPN = Math.max(...pool.map(p => parseInt(p.PN) || 0).filter(n => n > 0));
-  const probSel = document.getElementById('filter-prob');
-  probSel.innerHTML = '<option value="all">Any</option>';
-  for (let i = 1; i <= (maxPN || 30); i++) {
-    const o = document.createElement('option'); o.value = String(i); o.textContent = `#${i}`; probSel.appendChild(o);
+// Profile avatar live preview
+let profileAvatarColor = <?= json_encode($user['avatar_color'] ?? '#6c8ef5') ?>;
+let profileAvatarEmoji = <?= json_encode($user['avatar_emoji'] ?? '\u2211', JSON_UNESCAPED_UNICODE) ?>;
+
+document.getElementById('avatar-color-picker').addEventListener('click', e => {
+  const btn = e.target.closest('.avatar-color-btn');
+  if (!btn) return;
+  document.querySelectorAll('.avatar-color-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  profileAvatarColor = btn.dataset.color;
+  // Update the edit-form avatar preview (only color bg, keep emoji)
+  if (!CURRENT_USER.avatar_url) {
+    const editAvatar = document.getElementById('edit-avatar-preview');
+    if (editAvatar) editAvatar.style.background = profileAvatarColor;
   }
+});
+
+document.getElementById('avatar-emoji-picker').addEventListener('click', e => {
+  const btn = e.target.closest('.avatar-emoji-btn');
+  if (!btn) return;
+  document.querySelectorAll('.avatar-emoji-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  profileAvatarEmoji = btn.dataset.emoji;
+  // Update the edit-form avatar preview emoji
+  if (!CURRENT_USER.avatar_url) {
+    const emojiSpan = document.getElementById('avatar-emoji-display');
+    if (emojiSpan) emojiSpan.textContent = profileAvatarEmoji;
+  }
+});
+
+document.getElementById('save-profile-btn').addEventListener('click', async () => {
+  const newName = document.getElementById('profile-display-name').value.trim();
+  const newBio  = document.getElementById('profile-bio').value.trim();
+  const res = await api('save_profile', {
+    display_name:  newName,
+    bio:           newBio,
+    avatar_color:  profileAvatarColor,
+    avatar_emoji:  profileAvatarEmoji,
+    banner_style:  editBannerStyle,
+    banner_color1: editBannerColor1,
+    banner_color2: editBannerColor2,
+    banner_angle:  editBannerAngle,
+  });
+  if (res?.ok) {
+    // Update CURRENT_USER cache
+    CURRENT_USER.display_name  = newName;
+    CURRENT_USER.bio           = newBio;
+    CURRENT_USER.avatar_color  = profileAvatarColor;
+    CURRENT_USER.avatar_emoji  = profileAvatarEmoji;
+    CURRENT_USER.banner_style  = editBannerStyle;
+    CURRENT_USER.banner_color1 = editBannerColor1;
+    CURRENT_USER.banner_color2 = editBannerColor2;
+    CURRENT_USER.banner_angle  = editBannerAngle;
+
+    // Update sidebar chip
+    if (!CURRENT_USER.avatar_url) {
+      document.getElementById('sidebar-avatar').style.background = profileAvatarColor;
+      document.getElementById('sidebar-avatar').textContent = profileAvatarEmoji;
+    }
+    // Update live card text
+    document.getElementById('profile-view-name').textContent = newName || CURRENT_USER.username;
+    document.getElementById('profile-view-bio').innerHTML = newBio
+  ? newBio.replace(/\n/g, '<br>')
+  : '<span style="color:var(--text3);font-style:italic;">No bio yet.</span>';
+  
+    const msg = document.getElementById('profile-save-msg');
+    msg.style.display = 'inline';
+    setTimeout(() => {
+      msg.style.display = 'none';
+      document.getElementById('profile-cancel-btn').click();
+    }, 1200);
+  }
+});
+
+document.getElementById('share-profile-btn').addEventListener('click', () => {
+  const base = <?= json_encode(rtrim(dirname($_SERVER['SCRIPT_NAME']), '/')) ?>;
+  const url = window.location.origin + (base ? base + '/' : '/') + 'u/' + CURRENT_USER.username;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById('share-profile-btn-text');
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Share Profile'; }, 2000);
+  }).catch(() => {
+    prompt('Your profile URL:', url);
+  });
+});
+
+document.getElementById('change-pw-btn').addEventListener('click', async () => {
+  const err = document.getElementById('pw-error');
+  err.classList.remove('show');
+  const res = await api('change_password', {
+    current_password: document.getElementById('pw-current').value,
+    new_password: document.getElementById('pw-new').value,
+  });
+  if (res?.ok) {
+    document.getElementById('pw-current').value = '';
+    document.getElementById('pw-new').value = '';
+    const msg = document.getElementById('pw-save-msg');
+    msg.style.display = 'inline';
+    setTimeout(() => { msg.style.display = 'none'; }, 2000);
+  } else {
+    err.textContent = (res?.errors || ['Error updating password.']).join(' ');
+    err.classList.add('show');
+  }
+});
+
+// ============================================================
+// ADMIN JS
+// ============================================================
+<?php if ($user['role'] === 'admin'): ?>
+async function renderAdmin() {
+  // Stats
+  const stats = await api('admin_stats');
+  if (stats) {
+    document.getElementById('admin-stats-grid').innerHTML = `
+      <div class="stat-card"><div class="stat-value">${stats.total_users}</div><div class="stat-label">Total Users</div></div>
+      <div class="stat-card stat-correct"><div class="stat-value">${stats.users_today}</div><div class="stat-label">New Today</div></div>
+      <div class="stat-card stat-accent2"><div class="stat-value">${stats.total_attempts}</div><div class="stat-label">Total Attempts</div></div>
+      <div class="stat-card"><div class="stat-value">${stats.total_tests}</div><div class="stat-label">Tests Taken</div></div>
+      <div class="stat-card"><div class="stat-value">${stats.active_today}</div><div class="stat-label">Active Today</div></div>
+    `;
+  }
+
+  // Users table
+  const users = await api('admin_users');
+  if (!users) return;
+  const tbody = document.getElementById('admin-users-tbody');
+  const searchVal = (document.getElementById('admin-search')?.value || '').toLowerCase();
+  const filtered = searchVal ? users.filter(u =>
+    u.username.toLowerCase().includes(searchVal) ||
+    u.email.toLowerCase().includes(searchVal) ||
+    (u.display_name || '').toLowerCase().includes(searchVal)
+  ) : users;
+
+  tbody.innerHTML = filtered.map(u => `
+    <tr>
+      <td style="color:var(--text3);">${u.id}</td>
+      <td><strong>${u.username}</strong></td>
+      <td style="color:var(--text2);font-size:12px;">${u.email}</td>
+      <td>${u.display_name || '—'}</td>
+      <td><span class="role-badge ${u.role}">${u.role}</span></td>
+      <td style="text-align:right;">${u.attempt_count}</td>
+      <td style="font-size:11px;color:var(--text3);">${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</td>
+      <td style="font-size:11px;color:var(--text3);">${u.last_login ? new Date(u.last_login).toLocaleDateString() : 'Never'}</td>
+      <td>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${u.role !== 'admin' ? `<button class="btn btn-secondary btn-sm" onclick="adminToggleRole(${u.id},'admin')">Make Admin</button>` : `<button class="btn btn-secondary btn-sm" onclick="adminToggleRole(${u.id},'user')">Demote</button>`}
+          ${u.role !== 'admin' ? `<button class="btn btn-sm" style="background:var(--wrong);color:#fff;" onclick="adminDeleteUser(${u.id},'${u.username.replace("'","\\'")}')">Delete</button>` : ''}
+        </div>
+      </td>
+    </tr>
+  `).join('');
 }
 
+async function adminToggleRole(id, role) {
+  if (!confirm(`Set user #${id} role to "${role}"?`)) return;
+  await api('admin_set_role', { user_id: id, role });
+  renderAdmin();
+}
+
+async function adminDeleteUser(id, username) {
+  if (!confirm(`Delete user "${username}" and all their data? This cannot be undone.`)) return;
+  await api('admin_delete_user', { user_id: id });
+  renderAdmin();
+}
+
+document.getElementById('admin-search')?.addEventListener('input', renderAdmin);
+<?php endif; ?>
+
+// ============================================================
+// NAVIGATE — single definition
+// ============================================================
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const pageEl = document.getElementById('page-' + page);
+  if (!pageEl) return;
+  pageEl.classList.add('active');
+  document.querySelector(`.nav-item[data-page="${page}"]`)?.classList.add('active');
+  document.querySelectorAll('.mobile-nav-item[data-page]').forEach(n => n.classList.remove('active'));
+  document.querySelector(`.mobile-nav-item[data-page="${page}"]`)?.classList.add('active');
+  document.querySelectorAll('.mobile-menu-item[data-page]').forEach(n => n.classList.remove('active'));
+  document.querySelector(`.mobile-menu-item[data-page="${page}"]`)?.classList.add('active');
+  if (page === 'home') renderHome();
+  if (page === 'stats') renderStats();
+  if (page === 'history') renderHistory();
+  if (page === 'browse') renderBrowse();
+  if (page === 'tests') renderTestsPage();
+  if (page === 'profile') renderProfile();
+  <?php if ($user['role'] === 'admin'): ?>
+  if (page === 'admin') renderAdmin();
+  <?php endif; ?>
+  window.scrollTo(0, 0);
+  document.getElementById('user-menu')?.classList.remove('open');
+}
+
+// Wire up all nav clicks
+document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+  item.addEventListener('click', () => navigate(item.dataset.page));
+});
+document.querySelectorAll('.mobile-nav-item[data-page]').forEach(item => {
+  item.addEventListener('click', () => navigate(item.dataset.page));
+});
+document.querySelectorAll('.mobile-menu-item[data-page]').forEach(item => {
+  item.addEventListener('click', () => { navigate(item.dataset.page); closeMoreMenu(); });
+});
 // ============================================================
 // TABLE CELL TOOLTIP — show full value on click/tap
 // ============================================================
@@ -3174,7 +4308,6 @@ function updateProbFilter() {
   });
 })();
 
-
 (function keepAlive() {
   const PING_URL = 'https://asymptote-renderer-2.onrender.com/render';
   const INTERVAL = 4 * 60 * 1000; // 4 minutes
@@ -3195,6 +4328,154 @@ function updateProbFilter() {
   // First ping after 30s so it doesn't delay startup, then every 4 min
   setTimeout(() => { ping(); setInterval(ping, INTERVAL); }, 30000);
 })();
+
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  // Apply settings from server
+  applySettings(INITIAL_SETTINGS);
+
+  // Load attempts early (caching)
+  await loadAttempts();
+
+  try {
+    const DATASET_URL = './dataset/dataset.csv';
+    const resp = await fetch(DATASET_URL);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const text = await resp.text();
+
+    const raw = Papa.parse(text, { header: true, skipEmptyLines: true }).data;
+    const seen = new Set();
+    const deduped = [];
+    raw.forEach(r => {
+      if (!r.problem_id || !r.problem) return;
+      if (!seen.has(r.problem_id)) { seen.add(r.problem_id); deduped.push(r); }
+    });
+
+    problems = deduped.map(r => {
+      const linkMatch = r.link && r.link.match(
+        /(\d{4})_(Fall_AMC_12[AB]|Fall_AMC_10[AB]|AMC_12[ABP]?|AMC_10[AB]?|AMC_8|AIME_II|AIME_I|AIME|AJHSME|AHSME|USAJMO|USAMO|USOJMO|USOMO)_Problems/
+      );
+      const year = linkMatch ? linkMatch[1] : '';
+      const comp = linkMatch ? linkMatch[2].replace(/_/g, ' ') : '';
+      const isAIME = comp.startsWith('AIME')
+        || ['USAMO', 'USAJMO', 'USOJMO', 'USOMO'].includes(comp)
+        || (comp === 'AHSME' && !r.letter);
+      const pnMatch = r.link && r.link.match(/Problem_(\d+)/);
+      const pn = pnMatch ? pnMatch[1] : '';
+      return {
+        ID: r.problem_id, Year: year, Comp: comp, PN: pn, Q: r.problem,
+        A: (() => {
+          if (r.answer == null) return '';
+          const s = String(r.answer).trim();
+          const n = Number(s);
+          return (s !== '' && !isNaN(n) && isFinite(n)) ? String(n) : s;
+        })(),
+        Letter: r.letter || '', IsAIME: isAIME, Link: r.link || ''
+      };
+    });
+
+    console.log('Loaded dataset:', problems.length, 'unique problems');
+  } catch (err) {
+    console.error('Dataset loading failed:', err);
+    document.getElementById('loading-overlay').innerHTML = `
+      <p style="color:var(--wrong);font-weight:600;">Failed to load dataset. Make sure dataset.csv is at ./dataset/dataset.csv</p>
+    `;
+    return;
+  }
+
+  // Populate dropdowns
+  const comps = [...new Set(problems.map(p => p.Comp))].filter(Boolean).sort();
+  const compOrder = [
+    'AIME', 'AIME I', 'AIME II',
+    'AMC 8', 'AMC 10', 'AMC 10A', 'AMC 10B', 'AMC 12', 'AMC 12A', 'AMC 12B', 'AMC 12P',
+    'AJHSME', 'AHSME',
+    'Fall AMC 10A', 'Fall AMC 10B', 'Fall AMC 12A', 'Fall AMC 12B',
+    'USAJMO', 'USAMO', 'USOJMO', 'USOMO'
+  ];
+  const sortedComps = [...compOrder.filter(c => comps.includes(c)), ...comps.filter(c => !compOrder.includes(c))];
+
+  const filterCompSel = document.getElementById('filter-comp');
+  filterCompSel.innerHTML = '<option value="all">All Competitions</option>';
+  sortedComps.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; filterCompSel.appendChild(o); });
+
+  const browseCompSel = document.getElementById('browse-comp');
+  browseCompSel.innerHTML = '';
+  sortedComps.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; browseCompSel.appendChild(o); });
+
+  const histCompSel = document.getElementById('hist-comp');
+  histCompSel.innerHTML = '<option value="all">All Competitions</option>';
+  sortedComps.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; histCompSel.appendChild(o); });
+
+  const testCompSel = document.getElementById('test-comp');
+  testCompSel.innerHTML = '';
+  const aimeComps = sortedComps.filter(c => c.startsWith('AIME'));
+  const amcComps = sortedComps.filter(c => c.startsWith('AMC') || c.startsWith('Fall AMC'));
+  const otherComps = sortedComps.filter(c => !c.startsWith('AIME') && !c.startsWith('AMC') && !c.startsWith('Fall AMC'));
+  [
+    { v: 'AIME_ALL', t: 'AIME (all)' }, ...aimeComps.map(c => ({ v: c, t: c })),
+    { v: 'AMC_ALL',  t: 'AMC (all)'  }, ...amcComps.map(c => ({ v: c, t: c })),
+    ...otherComps.map(c => ({ v: c, t: c }))
+  ].forEach(({ v, t }) => { const o = document.createElement('option'); o.value = v; o.textContent = t; testCompSel.appendChild(o); });
+
+  populateYearSelects();
+
+  if (browseCompSel.options.length) browseCompSel.value = browseCompSel.options[0].value;
+  updateBrowseYears();
+  updateProbFilter();
+
+  document.getElementById('loading-overlay').style.display = 'none';
+  renderHome();
+  renderBrowse();
+}
+
+function getYearsForComp(compVal) {
+  let pool = [...problems];
+  if (compVal === 'AIME_ALL') pool = pool.filter(p => p.Comp.startsWith('AIME'));
+  else if (compVal === 'AMC_ALL') pool = pool.filter(p => p.Comp.startsWith('AMC'));
+  else if (compVal && compVal !== 'all') pool = pool.filter(p => p.Comp === compVal);
+  return [...new Set(pool.map(p => p.Year))].filter(Boolean).sort();
+}
+
+function populateYearSelects() {
+  // Filter-year and hist-year use their own comp selector to filter years
+  ['filter-year', 'hist-year'].forEach(id => {
+    const sel = document.getElementById(id);
+    const years = getYearsForComp('all');
+    sel.innerHTML = '<option value="all">All Years</option>';
+    years.forEach(y => { const o = document.createElement('option'); o.value = y; o.textContent = y; sel.appendChild(o); });
+  });
+  // Test year
+  const testCompVal = document.getElementById('test-comp').value;
+  const testYears = getYearsForComp(testCompVal);
+  const testYearSel = document.getElementById('test-year');
+  testYearSel.innerHTML = '<option value="all">All Years</option>';
+  testYears.forEach(y => { const o = document.createElement('option'); o.value = y; o.textContent = y; testYearSel.appendChild(o); });
+}
+
+function updateBrowseYears() {
+  const comp = document.getElementById('browse-comp').value;
+  const years = getYearsForComp(comp);
+  const sel = document.getElementById('browse-year');
+  sel.innerHTML = '<option value="all">All Years</option>';
+  years.forEach(y => { const o = document.createElement('option'); o.value = y; o.textContent = y; sel.appendChild(o); });
+  if (years.includes('2024')) sel.value = '2024';
+  else if (years.length) sel.value = years[years.length - 1];
+}
+
+function updateProbFilter() {
+  const comp = document.getElementById('filter-comp').value;
+  let pool = [...problems];
+  if (comp && comp !== 'all') pool = pool.filter(p => p.Comp === comp);
+  const maxPN = Math.max(...pool.map(p => parseInt(p.PN) || 0).filter(n => n > 0));
+  const probSel = document.getElementById('filter-prob');
+  probSel.innerHTML = '<option value="all">Any</option>';
+  for (let i = 1; i <= (maxPN || 30); i++) {
+    const o = document.createElement('option'); o.value = String(i); o.textContent = `#${i}`; probSel.appendChild(o);
+  }
+}
 
 init();
 </script>
